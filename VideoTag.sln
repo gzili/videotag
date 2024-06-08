@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34607.119
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoTag.Server", "VideoTag.Server\VideoTag.Server.csproj", "{895FBFAD-C0BC-4981-86CC-ADD0BAE98E29}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "videoTag.client", "videoTag.client\videoTag.client.esproj", "{9F201B53-03D9-4C8F-A177-03D04B153BAD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{895FBFAD-C0BC-4981-86CC-ADD0BAE98E29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{895FBFAD-C0BC-4981-86CC-ADD0BAE98E29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{895FBFAD-C0BC-4981-86CC-ADD0BAE98E29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{895FBFAD-C0BC-4981-86CC-ADD0BAE98E29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F201B53-03D9-4C8F-A177-03D04B153BAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F201B53-03D9-4C8F-A177-03D04B153BAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F201B53-03D9-4C8F-A177-03D04B153BAD}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F201B53-03D9-4C8F-A177-03D04B153BAD}.Release|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2E279AB4-9588-430D-B69A-730E241CF99E}
+	EndGlobalSection
+EndGlobal

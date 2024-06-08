@@ -1,0 +1,87 @@
+.video-item {
+  width: 204px;
+  
+  & .__thumbnail {
+    height: 117px;
+    position: relative;
+    
+    & img {
+      display: block;
+      border-radius: 4px;
+      width: 100%;
+      height: 100%;
+    }
+    
+    & .__overlay-badge {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.6);
+      border-radius: 4px;
+      padding: 0 4px;
+      color: white;
+      font-size: 0.75rem;
+      
+      &.__resolution {
+        top: 4px;
+        left: 4px;
+      }
+      
+      &.__duration {
+        bottom: 4px;
+        right: 4px;
+      }
+    }
+    
+    & .__overlay-buttons-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.1s linear;
+      
+      &:hover {
+        opacity: 1;
+      }
+      
+      & .__overlay-buttons {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        
+        & .__overlay-button {
+          display: inline-flex;
+          border: 0;
+          background-color: rgba(0, 0, 0, 0.6);
+          outline: 0;
+          border-radius: 50%;
+          font-size: 2rem;
+          padding: 8px;
+          color: white;
+          cursor: pointer;
+          
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+          }
+          
+          &:active {
+            background-color: rgba(0, 0, 0, 1);
+          }
+          
+          &.--small {
+            font-size: 1.2rem;
+            padding: 5px;
+          }
+        }
+      }
+    }
+  }
+  
+  & .__title {
+    padding-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.8rem;
+  }
+}
