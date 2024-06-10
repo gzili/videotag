@@ -1,6 +1,7 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SyncIcon from '@mui/icons-material/Sync';
 import {
   Box,
   Button, Checkbox,
@@ -105,8 +106,24 @@ function Videos() {
   
   return (
     <Box pt={2}>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography fontSize={24} fontWeight="bold">{searchParams.getAll('tagIds').length === 0 && 'Untagged '}Videos ({videos.length})</Typography>
+      <Box display="flex" alignItems="center">
+        <Typography
+          fontSize={24}
+          fontWeight="bold"
+        >
+          {searchParams.getAll('tagIds').length === 0 && 'Untagged '}Videos ({videos.length})
+        </Typography>
+        <Box flex="1" pl="1rem">
+          <Button
+            size="small"
+            variant="contained"
+            disableElevation
+            startIcon={<SyncIcon />}
+            onClick={() => api.post('videos/sync')}
+          >
+            Sync
+          </Button>
+        </Box>
         <Select
           size="small"
           value={sortBy}
@@ -236,5 +253,5 @@ function VideoDeleteDialog(props: VideoDeleteDialogProps) {
 }
 
 function deleteVideo({ videoId, keepFileOnDisk }: { videoId: string, keepFileOnDisk: boolean }) {
-  return  api.delete(`videos/${videoId}?keepFileOnDisk=${keepFileOnDisk}`)
+  return api.delete(`videos/${videoId}?keepFileOnDisk=${keepFileOnDisk}`)
 }

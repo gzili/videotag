@@ -5,6 +5,7 @@ using EvolveDb;
 using VideoTag.Server;
 using VideoTag.Server.BackgroundServices;
 using VideoTag.Server.Contexts;
+using VideoTag.Server.Hubs;
 using VideoTag.Server.Repositories;
 using VideoTag.Server.Services;
 using VideoTag.Server.SqlTypeHandlers;
@@ -17,6 +18,8 @@ SqlMapper.AddTypeHandler(new GuidHandler());
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddSingleton<LibraryConfiguration>(_ => new LibraryConfiguration
@@ -43,6 +46,7 @@ builder.Services.AddCors(options =>
     {
         policyBuilder.AllowAnyOrigin();
         policyBuilder.AllowAnyMethod();
+        policyBuilder.AllowAnyHeader();
     });
 });
 
@@ -75,6 +79,8 @@ using (var scope = app.Services.CreateScope())
 app.UseStaticFiles();
 
 app.UseCors();
+
+app.MapHub<SyncHub>("/hub");
 
 app.MapControllers();
 

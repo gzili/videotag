@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.SignalR;
 using VideoTag.Server.Entities;
 using VideoTag.Server.Helpers;
+using VideoTag.Server.Hubs;
 using VideoTag.Server.Repositories;
 using VideoTag.Server.Services;
 
@@ -14,8 +16,9 @@ public class VideoLibrarySync : IHostedService
     private readonly LibraryConfiguration _libraryConfiguration;
     private readonly IVideoRepository _videoRepository;
     private readonly VideoService _videoService;
+    private readonly IHubContext<SyncHub> _hubContext;
 
-    public VideoLibrarySync(ILogger<VideoLibrarySync> logger, VideoLibrarySyncTrigger trigger, LibraryConfiguration libraryConfiguration, IVideoRepository videoRepository, VideoService videoService)
+    public VideoLibrarySync(ILogger<VideoLibrarySync> logger, VideoLibrarySyncTrigger trigger, LibraryConfiguration libraryConfiguration, IVideoRepository videoRepository, VideoService videoService, IHubContext<SyncHub> hubContext)
     {
         _lock = new SpinLock(false);
         _logger = logger;
@@ -23,6 +26,7 @@ public class VideoLibrarySync : IHostedService
         _libraryConfiguration = libraryConfiguration;
         _videoRepository = videoRepository;
         _videoService = videoService;
+        _hubContext = hubContext;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -57,6 +61,7 @@ public class VideoLibrarySync : IHostedService
         try
         {
             _logger.LogInformation("Acquired lock");
+            await _hubContext.Clients.All.SendAsync("syncStarted");
 
             var videoPaths = Directory
                 .EnumerateFiles(_libraryConfiguration.LibraryPath, "*", SearchOption.AllDirectories)
@@ -81,6 +86,7 @@ public class VideoLibrarySync : IHostedService
                 var fullPath = missingPaths[i];
 
                 _logger.LogInformation("Processing file {Index}/{Count}. Path: {Path}", i + 1, missingPaths.Count, fullPath);
+                await _hubContext.Clients.All.SendAsync("syncProgress", fullPath, i + 1, missingPaths.Count);
                 
                 var fileInfo = new FileInfo(fullPath);
                 fileInfo.Refresh();
@@ -112,10 +118,13 @@ public class VideoLibrarySync : IHostedService
 
                 await _videoService.CreateVideo(video);
             }
+
+            await _hubContext.Clients.All.SendAsync("syncFinished");
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Failed to sync video library");
+            await _hubContext.Clients.All.SendAsync("syncFailed");
         }
         finally
         {
