@@ -116,7 +116,7 @@ public class VideoLibrarySync : IHostedService
                     ThumbnailSeek = thumbnailSeek
                 };
 
-                await _videoService.CreateVideo(video);
+                // await _videoService.CreateVideo(video);
             }
 
             await _hubContext.Clients.All.SendAsync("syncFinished");
