@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\images\" />
+    <Content Update="wwwroot\images\**" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
   <ItemGroup>
