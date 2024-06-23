@@ -109,8 +109,7 @@ public class VideoController(ILogger<VideoController> logger, VideoService video
     {
         try
         {
-            logger.LogInformation("videoId: {videoId}, keepFileOnDisk: {keepFileOnDisk}", videoId, keepFileOnDisk);
-            // await videoService.DeleteVideo(videoId, keepFileOnDisk);
+            await videoService.DeleteVideo(videoId, keepFileOnDisk);
             return Ok();
         }
         catch (InvalidOperationException)
