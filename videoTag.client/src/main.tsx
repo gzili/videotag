@@ -20,7 +20,7 @@ const queryClient = new QueryClient({
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Root/>
+    element: <Root />
   },
   {
     path: 'videos/:videoId',

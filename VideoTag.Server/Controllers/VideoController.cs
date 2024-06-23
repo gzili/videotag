@@ -8,12 +8,12 @@ namespace VideoTag.Server.Controllers;
 
 [ApiController]
 [Route("api/videos")]
-public class VideoController(ILogger<VideoController> logger, VideoService videoService, VideoLibrarySyncTrigger sync) : ControllerBase
+public class VideoController(ILogger<VideoController> logger, VideoService videoService, VideoLibrarySyncTrigger syncTrigger) : ControllerBase
 {
     [HttpPost("sync")]
     public IActionResult TriggerSync()
     {
-        sync.OnTriggered();
+        syncTrigger.OnTriggered();
         return Ok();
     }
 
@@ -109,7 +109,8 @@ public class VideoController(ILogger<VideoController> logger, VideoService video
     {
         try
         {
-            await videoService.DeleteVideo(videoId, keepFileOnDisk);
+            logger.LogInformation("videoId: {videoId}, keepFileOnDisk: {keepFileOnDisk}", videoId, keepFileOnDisk);
+            // await videoService.DeleteVideo(videoId, keepFileOnDisk);
             return Ok();
         }
         catch (InvalidOperationException)

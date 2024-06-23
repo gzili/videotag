@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Globalization;
+using System.Text.Json.Serialization;
 using Dapper;
 using EvolveDb;
 using VideoTag.Server;
@@ -50,11 +51,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
 
 var app = builder.Build();
 
-builder.Configuration.AddJsonFile("librarysettings.json");
+builder.Configuration.AddJsonFile("localsettings.json");
 
 using (var scope = app.Services.CreateScope())
 {

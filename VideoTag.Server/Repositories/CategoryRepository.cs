@@ -15,32 +15,9 @@ public class CategoryRepository(DapperContext dapperContext) : ICategoryReposito
         }
     }
 
-    public async Task<IEnumerable<Category>> GetCategories()
+    public Task<IEnumerable<Category>> GetCategories(bool includeTags = false)
     {
-        const string query = """
-                             SELECT C.CategoryId, C.Label, T.TagId, T.Label
-                             FROM Categories C
-                                 JOIN Tags T on C.CategoryId = T.CategoryId
-                             ORDER BY C.Label, T.Label
-                             """;
-        using (var connection = dapperContext.CreateConnection())
-        {
-            var categories = await connection.QueryAsync<Category, Tag?, Category>(query, (category, tag) =>
-            {
-                if (tag != null)
-                {
-                    category.Tags.Add(tag);
-                }
-                return category;
-            }, splitOn: "TagId");
-
-            return categories.GroupBy(c => c.CategoryId).Select(g =>
-            {
-                var category = g.First();
-                category.Tags = g.Select(c => c.Tags.Single()).ToList();
-                return category;
-            });
-        }
+        return includeTags ? GetCategoriesWithTags() : GetAllCategories();
     }
 
     public async Task<Category> GetCategory(Guid categoryId)
@@ -50,6 +27,19 @@ public class CategoryRepository(DapperContext dapperContext) : ICategoryReposito
         {
             return await connection.QuerySingleAsync<Category>(query, new { CategoryId = categoryId });
         }
+    }
+
+    public async Task UpdateCategory(Category category)
+    {
+        const string sql = """
+                           UPDATE Categories
+                           SET Label = @Label
+                           WHERE CategoryId = @CategoryId
+                           """;
+
+        using var connection = dapperContext.CreateConnection();
+
+        await connection.ExecuteAsync(sql, category);
     }
 
     public async Task DeleteCategory(Guid categoryId)
@@ -63,5 +53,49 @@ public class CategoryRepository(DapperContext dapperContext) : ICategoryReposito
                 throw new InvalidOperationException("No rows affected");
             }
         }
+    }
+
+    private async Task<IEnumerable<Category>> GetCategoriesWithTags()
+    {
+        const string query = """
+                             SELECT C.CategoryId, C.Label, T.TagId, T.Label
+                             FROM Categories C
+                                 LEFT JOIN Tags T on C.CategoryId = T.CategoryId
+                             ORDER BY C.Label, T.Label
+                             """;
+
+        var categories = new Dictionary<Guid, Category>();
+        
+        using var connection = dapperContext.CreateConnection();
+        
+        await connection.QueryAsync<Category, Tag?, Category>(query, (category, tag) =>
+        {
+            if (!categories.TryAdd(category.CategoryId, category))
+            {
+                category = categories[category.CategoryId];
+            }
+                
+            if (tag != null)
+            {
+                category.Tags.Add(tag);
+            }
+                
+            return category;
+        }, splitOn: "TagId");
+
+        return categories.Values;
+    }
+
+    private async Task<IEnumerable<Category>> GetAllCategories()
+    {
+        const string query = """
+                             SELECT CategoryId, Label
+                             FROM Categories
+                             ORDER BY Label
+                             """;
+        
+        using var connection = dapperContext.CreateConnection();
+
+        return await connection.QueryAsync<Category>(query);
     }
 }

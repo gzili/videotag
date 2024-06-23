@@ -19,9 +19,20 @@ public class CategoryService(ICategoryRepository categoryRepository) : ICategory
         return category;
     }
 
-    public async Task<IEnumerable<Category>> GetCategories()
+    public async Task<IEnumerable<Category>> GetCategories(bool includeTags = false)
     {
-        return await categoryRepository.GetCategories();
+        return await categoryRepository.GetCategories(includeTags);
+    }
+
+    public async Task<Category> UpdateCategory(Guid categoryId, CategoryCreateOrUpdateDto dto)
+    {
+        var category = await categoryRepository.GetCategory(categoryId);
+
+        category.Label = dto.Label;
+
+        await categoryRepository.UpdateCategory(category);
+
+        return category;
     }
 
     public async Task DeleteCategory(Guid categoryId)
