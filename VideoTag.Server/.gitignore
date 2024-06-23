@@ -1,5 +1,8 @@
+# Build output
 bin/
 obj/
+
+# Local files
 wwwroot/
 localsettings.json
 *.db
