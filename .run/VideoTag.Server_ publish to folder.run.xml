@@ -1,0 +1,6 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="VideoTag.Server: publish to folder" type="DotNetFolderPublish" factoryName="Publish to folder">
+    <riderPublish configuration="Release" platform="Any CPU" runtime="Portable" target_folder="$PROJECT_DIR$/VideoTag.Server/bin/Release/net8.0/publish" target_framework="net8.0" uuid_high="-8547902814742099583" uuid_low="-8733414465377563095" />
+    <method v="2" />
+  </configuration>
+</component>
