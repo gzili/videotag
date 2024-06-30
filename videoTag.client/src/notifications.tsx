@@ -4,6 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import * as signalR from "@microsoft/signalr";
 import { API_HOST } from './env';
+import { useQueryClient } from '@tanstack/react-query';
+
+const HubEvents = {
+  SyncStarted: 'syncStarted',
+  SyncProgress: 'syncProgress',
+  SyncFinished: 'syncFinished',
+  SyncFailed: 'syncFailed',
+} as const;
 
 const connection = new signalR.HubConnectionBuilder()
     .withUrl(`${API_HOST}/hub`, { withCredentials: false })
@@ -24,28 +32,53 @@ export function Notifications() {
     setProgress(null);
   }, []);
 
+  const queryClient = useQueryClient();
+
   useEffect(() => {
-    connection.on('syncStarted', () => {
-      setTitle('Sync started');
-      setProgress(null);
-    });
-    connection.on('syncProgress', (fileName: string, current: number, total: number) => {
-      setTitle('Sync in progress');
-      setProgress({
-        fileName,
-        current,
-        total,
-      });
-    });
-    connection.on('syncFinished', () => {
-      setTitle('Sync finished');
-      setProgress(null);
-    });
-    connection.on('syncFailed', () => {
-      setTitle('Sync failed');
-      setProgress(null);
-    });
-  }, []);
+    const eventHandlers = [
+      {
+        event: HubEvents.SyncStarted,
+        handler: () => {
+          setTitle('Sync started');
+          setProgress(null);
+        },
+      },
+      {
+        event: HubEvents.SyncProgress,
+        handler: (fileName: string, current: number, total: number) => {
+          setTitle('Sync in progress');
+          setProgress({ fileName, current, total });
+        },
+      },
+      {
+        event: HubEvents.SyncFinished,
+        handler: () => {
+          setTitle('Sync finished');
+          setProgress(null);
+          queryClient.invalidateQueries({
+            queryKey: ['videos'],
+          });
+        },
+      },
+      {
+        event: HubEvents.SyncFailed,
+        handler: () => {
+          setTitle('Sync failed');
+          setProgress(null);
+        },
+      },
+    ];
+
+    for (const eventHandler of eventHandlers) {
+      connection.on(eventHandler.event, eventHandler.handler);
+    }
+
+    return () => {
+      for (const eventHandler of eventHandlers) {
+        connection.off(eventHandler.event, eventHandler.handler);
+      }
+    };
+  }, [queryClient]);
 
   useEffect(() => {
     if (connection.state === signalR.HubConnectionState.Disconnected) {
