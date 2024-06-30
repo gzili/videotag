@@ -74,7 +74,7 @@ export function EditTagDialog(props: EditTagDialogProps) {
           variant="contained"
           disableElevation
         >
-          {category ? 'Update' : 'Create'}
+          {tag ? 'Update' : 'Create'}
         </Button>
       </DialogActions>
     </Dialog>

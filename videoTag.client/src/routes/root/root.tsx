@@ -119,9 +119,18 @@ export function Tags() {
               >
                 Create group
               </Button>
-              <Link to="tags/new">
-                <Button size="small" variant="contained" startIcon={<SellIcon />} disableElevation>Create tag</Button>
-              </Link>
+              <Button 
+                size="small"
+                variant="contained"
+                startIcon={<SellIcon />}
+                disableElevation
+                onClick={() => {
+                  setTag(null);
+                  setIsEditTagDialogOpen(true);
+                }}
+              >
+                Create tag
+              </Button>
             </Stack>
           )}
         </Box>
