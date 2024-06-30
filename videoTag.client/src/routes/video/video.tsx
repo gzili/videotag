@@ -2,10 +2,10 @@ import { Autocomplete, Box, Button, Chip, Slider, Stack, TextField, Typography }
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ReactNode, useCallback, useState } from "react";
 import { api } from "../../api";
+import { TagDto, VideoDto } from "../../api/types";
 import { API_HOST } from "../../env.ts";
 import { formatDuration } from "../../utils.ts";
-import { useVideoTags, useVideo, VideoDto, TagDto, useTags, useVideoQueryKey } from "./data.ts";
-import { useVideoId } from "./hooks.ts";
+import { useTags, useVideo, useVideoId, useVideoQueryKey, useVideoTags } from "./hooks.ts";
 
 export function Video() {
   const { video } = useVideo();
@@ -73,14 +73,14 @@ function Tags() {
   const queryClient = useQueryClient();
   
   const { mutate: mutateAddTag } = useMutation({
-    mutationFn: addTag,
+    mutationFn: api.addTagToVideo,
     onSuccess: tags => {
       queryClient.setQueryData(queryKey, tags);
     },
   });
 
   const { mutate: mutateRemoveTag } = useMutation({
-    mutationFn: removeTag,
+    mutationFn: api.removeTagFromVideo,
     onSuccess: tags => {
       queryClient.setQueryData(queryKey, tags);
     },
@@ -111,19 +111,6 @@ function Tags() {
   );
 }
 
-interface TagAddRemoveArgs {
-  videoId: string;
-  tagId: string;
-}
-
-function addTag({ videoId, tagId }: TagAddRemoveArgs) {
-  return api.post(`videos/${videoId}/tags/${tagId}`).json<TagDto[]>();
-}
-
-function removeTag({ videoId, tagId }: TagAddRemoveArgs) {
-  return api.delete(`videos/${videoId}/tags/${tagId}`).json<TagDto[]>();
-}
-
 interface TagSelectorProps {
   onSelect: (tag: TagDto) => void;
 }
@@ -133,7 +120,7 @@ function TagSelector(props: TagSelectorProps) {
 
   const { tags } = useTags();
 
-  const handleChange = useCallback((_: any, value: TagDto | null) => {
+  const handleChange = useCallback((_: unknown, value: TagDto | null) => {
     if (value !== null) {
       onSelect(value);
     }
@@ -175,12 +162,12 @@ function Thumbnail(props: ThumbnailProps) {
     
     setSeek(seek);
     setSliderValue(seek);
-  }, []);
+  }, [video.duration]);
   
   const queryClient = useQueryClient();
   const videoQueryKey = useVideoQueryKey();
   const { mutate, isPending: isMutating } = useMutation({
-    mutationFn: updateThumbnailSeek,
+    mutationFn: api.updateVideoThumbnailSeek,
     onSuccess: data => {
       queryClient.setQueryData(videoQueryKey, data);
     },
@@ -239,10 +226,6 @@ function Thumbnail(props: ThumbnailProps) {
       </Box>
     </Box>
   );
-}
-
-function updateThumbnailSeek({ videoId, seek }: { videoId: string, seek: number }) {
-  return api.put(`videos/${videoId}/thumbnail?seek=${seek}`).json<VideoDto>();
 }
 
 interface DurationLabelProps {

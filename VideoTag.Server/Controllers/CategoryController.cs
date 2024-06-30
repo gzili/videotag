@@ -16,10 +16,24 @@ public class CategoryController(ICategoryService categoryService) : ControllerBa
     }
 
     [HttpGet]
-    public async Task<IEnumerable<CategoryListItemDto>> GetCategories()
+    public async Task<IEnumerable<CategoryListItemDto>> GetCategories(bool includeTags)
     {
-        var categories = await categoryService.GetCategories();
+        var categories = await categoryService.GetCategories(includeTags);
         return categories.Select(CategoryListItemDto.FromCategory);
+    }
+
+    [HttpPut("{categoryId:guid}")]
+    public async Task<ActionResult<CategoryDto>> UpdateCategory(Guid categoryId, CategoryCreateOrUpdateDto dto)
+    {
+        try
+        {
+            var category = await categoryService.UpdateCategory(categoryId, dto);
+            return Ok(CategoryDto.FromCategory(category));
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpDelete("{categoryId:guid}")]

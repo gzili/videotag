@@ -1,27 +1,39 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import FolderIcon from '@mui/icons-material/Folder';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SellIcon from '@mui/icons-material/Sell';
+import SyncIcon from '@mui/icons-material/Sync';
 import {
   Box,
-  Button, Checkbox,
+  Button,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle, FormControlLabel,
+  FormControl,
+  FormControlLabel,
+  IconButton,
+  InputLabel,
   MenuItem,
   Select,
   Stack,
+  Switch,
   Typography
 } from "@mui/material";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+
 import { api } from "../../api";
+import { CategoryDto, TagDto, VideoListItemDto } from '../../api/types';
 import { API_HOST } from "../../env.ts";
-import { formatDuration } from "../../utils.ts";
-import { useCategories, useVideos, VideoListItemDto } from "./data.ts";
+import { useCategories } from '../../hooks';
+import { formatDuration, formatSize } from "../../utils.ts";
+
+import { QueryParam, SortBy, SortByType } from './constants.ts';
+import { DeleteCategoryDialog } from './delete-category-dialog.tsx';
+import { DeleteTagDialog } from './delete-tag-dialog.tsx';
+import { DeleteVideoDialog } from './delete-video-dialog.tsx';
+import { EditCategoryDialog } from './edit-category-dialog.tsx';
+import { EditTagDialog } from './edit-tag-dialog.tsx';
+import { useVideos } from "./hooks.ts";
 
 export function Root() {
   return (
@@ -35,19 +47,54 @@ export function Root() {
 export function Tags() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tagIds = searchParams.getAll('tagIds');
+  const editMode = searchParams.get(QueryParam.EditMode) !== null;
 
-  const handleTagClick = (tagId: string) => {
-    if (tagIds.includes(tagId)) {
-      searchParams.delete('tagIds', tagId);
+  const handleEditModeChange = (isEnabled: boolean) => {
+    if (isEnabled) {
+      setSearchParams(params => {
+        params.delete(QueryParam.TagIds);
+        params.set(QueryParam.EditMode, '1');
+        return params;
+      });
     } else {
-      searchParams.append('tagIds', tagId);
+      setSearchParams(params => {
+        params.delete(QueryParam.EditMode);
+        return params;
+      });
     }
+  }
 
-    setSearchParams(searchParams);
-  };
+  const tagIds = searchParams.getAll(QueryParam.TagIds);
+  const [isEditTagDialogOpen, setIsEditTagDialogOpen] = useState(false);
+  const [isDeleteTagDialogOpen, setIsDeleteTagDialogOpen] = useState(false);
+  const [tag, setTag] = useState<TagDto | null>(null);
 
-  const { categories } = useCategories();
+  function getTagClickHandler() {
+    if (editMode) {
+      return (tag: CategoryDto['tags'][0], category: CategoryDto) => {
+        setTag(tagInCategoryToTagDto(tag, category));
+        setIsEditTagDialogOpen(true);
+      };
+    } else {
+      return (tag: CategoryDto['tags'][0]) => {
+        if (tagIds.includes(tag.tagId)) {
+          searchParams.delete(QueryParam.TagIds, tag.tagId);
+        } else {
+          searchParams.append(QueryParam.TagIds, tag.tagId);
+        }
+    
+        setSearchParams(searchParams);
+      };
+    }
+  }
+
+  const handleTagClick = getTagClickHandler();
+
+  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
+  const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false);
+  const [category, setCategory] = useState<CategoryDto | null>(null);
+
+  const { categories } = useCategories(true);
 
   if (categories === undefined) {
     return null;
@@ -55,26 +102,136 @@ export function Tags() {
 
   return (
     <Box pt={1}>
-      <Typography fontSize={24} fontWeight="bold">Tags</Typography>
-      <Stack spacing={1}>
+      <Box display="flex" alignItems="center">
+        <Typography fontSize={24} fontWeight="bold">Tags</Typography>
+        <Box flex="1">
+          {editMode && (
+            <Stack direction="row" spacing={1} pl="1rem">
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<FolderIcon />}
+                disableElevation
+                onClick={() => {
+                  setCategory(null);
+                  setIsEditCategoryDialogOpen(true);
+                }}
+              >
+                Create group
+              </Button>
+              <Button 
+                size="small"
+                variant="contained"
+                startIcon={<SellIcon />}
+                disableElevation
+                onClick={() => {
+                  setTag(null);
+                  setIsEditTagDialogOpen(true);
+                }}
+              >
+                Create tag
+              </Button>
+            </Stack>
+          )}
+        </Box>
+        <Box>
+          <FormControlLabel
+            control={<Switch checked={editMode} onChange={e => handleEditModeChange(e.target.checked)} />}
+            label="Edit mode"
+            sx={{ mr: 0 }}
+          />
+        </Box>
+      </Box>
+      <Stack spacing={1} pt={1}>
         {categories.map(c => (
           <Box key={c.categoryId}>
-            <Typography fontWeight="bold">{c.label}</Typography>
-            <Box pt="2px" display="flex" flexWrap="wrap" gap={1}>
+            <Box display="flex" alignItems="center">
+              <Typography fontWeight="bold">{c.label}</Typography>
+              {editMode && (
+                <Stack direction="row" pl="6px">
+                  <IconButton
+                    aria-label="Edit category"
+                    size="small"
+                    onClick={() => {
+                      setCategory(c);
+                      setIsEditCategoryDialogOpen(true);
+                    }}
+                  >
+                    <EditIcon fontSize="inherit" />
+                  </IconButton>
+                  <IconButton
+                    aria-label="Delete category"
+                    size="small"
+                    onClick={() => {
+                      setCategory(c);
+                      setIsDeleteCategoryDialogOpen(true);
+                    }}
+                  >
+                    <DeleteIcon fontSize="inherit" />
+                  </IconButton>
+                </Stack>
+              )}
+            </Box>
+            <Box maxWidth="1500px" pt="2px" display="flex" flexWrap="wrap" gap={1}>
               {c.tags.map(t => (
                 <Chip
                   key={t.tagId}
                   label={t.label}
                   color={tagIds.includes(t.tagId) ? "primary" : undefined}
-                  onClick={() => handleTagClick(t.tagId)}
+                  onClick={() => handleTagClick(t, c)}
+                  onDelete={editMode ? (
+                    () => {
+                      setTag(tagInCategoryToTagDto(t, c));
+                      setIsDeleteTagDialogOpen(true);
+                    }
+                  ) : undefined}
                 />
               ))}
+              {c.tags.length === 0 && (
+                <Typography color="grey.600" fontStyle="italic" fontSize="0.8125rem">No tags.</Typography>
+              )}
             </Box>
           </Box>
         ))}
       </Stack>
+      <EditCategoryDialog
+        isOpen={isEditCategoryDialogOpen}
+        onClose={() => setIsEditCategoryDialogOpen(false)}
+        category={category}
+      />
+      {category && (
+        <DeleteCategoryDialog
+          isOpen={isDeleteCategoryDialogOpen}
+          onClose={() => setIsDeleteCategoryDialogOpen(false)}
+          category={category}
+        />
+      )}
+      <EditTagDialog
+        isOpen={isEditTagDialogOpen}
+        onClose={() => setIsEditTagDialogOpen(false)}
+        categories={categories}
+        tag={tag}
+      />
+      {tag && (
+        <DeleteTagDialog
+          isOpen={isDeleteTagDialogOpen}
+          onClose={() => setIsDeleteTagDialogOpen(false)}
+          tag={tag}
+        />
+      )}
     </Box>
   );
+}
+
+function tagInCategoryToTagDto(tag: CategoryDto['tags'][0], category: CategoryDto) {
+  return ({
+    tagId: tag.tagId,
+    label: tag.label,
+    category: {
+      categoryId: category.categoryId,
+      label: category.label,
+    },
+  });
 }
 
 function Videos() {
@@ -82,22 +239,26 @@ function Videos() {
   
   const { videos } = useVideos();
   
-  const [sortBy, setSortBy] = useState('lastModified');
+  const [sortBy, setSortBy] = useState<SortByType>(SortBy.LastModified);
   
   useMemo(() => {
     if (videos !== undefined) {
       switch (sortBy) {
-        case 'lastModified':
+        case SortBy.LastModified:
           videos.sort((a, b) => b.lastModifiedUnixSeconds - a.lastModifiedUnixSeconds);
           break;
-        case 'title':
-          videos.sort((a, b) => a.title.localeCompare(b.title));
+        case SortBy.Title:
+          videos.sort((a, b) => a.title.localeCompare(b.title, 'en', { numeric: true }));
+          break;
+        case SortBy.Size:
+          videos.sort((a, b) => b.size - a.size);
           break;
       }
     }
   }, [videos, sortBy]);
   
-  const [videoToDelete, setVideoToDelete] = useState<VideoListItemDto | null>(null);
+  const [isVideoDeleteDialogOpen, setIsVideoDeleteDialogOpen] = useState(false);
+  const [video, setVideo] = useState<VideoListItemDto | null>(null);
 
   if (videos === undefined) {
     return null;
@@ -105,28 +266,62 @@ function Videos() {
   
   return (
     <Box pt={2}>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography fontSize={24} fontWeight="bold">{searchParams.getAll('tagIds').length === 0 && 'Untagged '}Videos ({videos.length})</Typography>
-        <Select
-          size="small"
-          value={sortBy}
-          onChange={e => setSortBy(e.target.value)}
-        >
-          <MenuItem value="lastModified">Last modified</MenuItem>
-          <MenuItem value="title">Title</MenuItem>
-        </Select>
+      <Box display="flex" alignItems="center">
+        <Typography fontSize={24} fontWeight="bold">
+          {searchParams.getAll('tagIds').length === 0 && 'Untagged '}Videos ({videos.length})
+        </Typography>
+        <Box flex="1" pl="1rem">
+          <Button
+            size="small"
+            variant="contained"
+            disableElevation
+            startIcon={<SyncIcon />}
+            onClick={() => api.syncVideos()}
+          >
+            Sync
+          </Button>
+        </Box>
+        <FormControl>
+          <InputLabel id="sort-by-label">Sort by</InputLabel>
+          <Select
+            size="small"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as SortByType)}
+            labelId="sort-by-label"
+            label="Sort by"
+          >
+            <MenuItem value={SortBy.LastModified}>Last modified</MenuItem>
+            <MenuItem value={SortBy.Title}>Title</MenuItem>
+            <MenuItem value={SortBy.Size}>Size</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
-      <Box pt={1} display="flex" flexWrap="wrap" gap={1}>
-        {videos.map(video => <VideoCard key={video.videoId} video={video} onVideoToDeleteChange={setVideoToDelete} />)}
+      <Box pt={1} display="grid" gridTemplateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={1}>
+        {videos.map(video => (
+          <VideoCard
+            key={video.videoId}
+            video={video}
+            onVideoToDeleteChange={video => {
+              setVideo(video);
+              setIsVideoDeleteDialogOpen(true);
+            }}
+          />
+        ))}
       </Box>
-      <VideoDeleteDialog video={videoToDelete} onClose={() => setVideoToDelete(null)} />
+      {video && (
+        <DeleteVideoDialog
+          isOpen={isVideoDeleteDialogOpen}
+          onClose={() => setIsVideoDeleteDialogOpen(false)}
+          video={video}
+        />
+      )}
     </Box>
   );
 }
 
 interface VideoCardProps {
   video: VideoListItemDto;
-  onVideoToDeleteChange: (video: VideoListItemDto | null) => void;
+  onVideoToDeleteChange: (video: VideoListItemDto) => void;
 }
 
 function VideoCard(props: VideoCardProps) {
@@ -137,6 +332,7 @@ function VideoCard(props: VideoCardProps) {
       <div className="__thumbnail">
         <img src={API_HOST + video.thumbnailUrl} loading="lazy" />
         <div className="__overlay-badge __resolution">{formatResolution(video.resolution)}</div>
+        <div className="__overlay-badge __size">{formatSize(video.size)}</div>
         <div className="__overlay-badge __duration">{formatDuration(video.duration)}</div>
         <div className="__overlay-buttons-container">
           <div className="__overlay-buttons">
@@ -145,7 +341,7 @@ function VideoCard(props: VideoCardProps) {
                 <EditIcon fontSize="inherit" />
               </button>
             </Link>
-            <button className="__overlay-button" aria-label="play" onClick={() => playVideo(video.videoId)}>
+            <button className="__overlay-button" aria-label="play" onClick={() => api.playVideo(video.videoId)}>
               <PlayArrowIcon fontSize="inherit" />
             </button>
             <button className="__overlay-button --small" aria-label="delete" onClick={() => onVideoToDeleteChange(video)}>
@@ -172,69 +368,4 @@ function formatResolution(resolution: string) {
     default:
       return resolution;
   }
-}
-
-function playVideo(videoId: string) {
-  api.post(`videos/${videoId}/play`);
-}
-
-interface VideoDeleteDialogProps {
-  video: VideoListItemDto | null;
-  onClose: () => void;
-}
-
-function VideoDeleteDialog(props: VideoDeleteDialogProps) {
-  const { video, onClose } = props;
-  
-  const [displayTitle, setDisplayTitle] = useState('');
-  const [keepFileOnDisk, setKeepFileOnDisk] = useState(false);
-  
-  const queryClient = useQueryClient();
-  
-  const { mutate } = useMutation({
-    mutationFn: deleteVideo,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['videos'],
-      });
-      onClose();
-    },
-  });
-  
-  useEffect(() => {
-    if (video !== null) {
-      setDisplayTitle(video.title);
-    }
-  }, [video]);
-  
-  return (
-    <Dialog
-      open={video !== null}
-      onClose={onClose}
-    >
-      <DialogTitle>Delete Video</DialogTitle>
-      <DialogContent>
-        <DialogContentText>Delete video <strong>{displayTitle}</strong>?</DialogContentText>
-        <Box>
-          <FormControlLabel
-            control={<Checkbox checked={keepFileOnDisk} onChange={e => setKeepFileOnDisk(e.target.checked)} />}
-            label="Keep file on disk"
-          />
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button
-          color="error"
-          onClick={() => { mutate({ videoId: video?.videoId as string, keepFileOnDisk }) }}
-        >
-          Delete
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-function deleteVideo({ videoId, keepFileOnDisk }: { videoId: string, keepFileOnDisk: boolean }) {
-  return  api.delete(`videos/${videoId}?keepFileOnDisk=${keepFileOnDisk}`)
 }

@@ -1,5 +1,2 @@
-bin/
-obj/
-wwwroot/
-librarysettings.json
+localsettings.json
 *.db

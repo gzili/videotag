@@ -8,12 +8,12 @@ namespace VideoTag.Server.Controllers;
 
 [ApiController]
 [Route("api/videos")]
-public class VideoController(ILogger<VideoController> logger, VideoService videoService, VideoLibrarySyncTrigger sync) : ControllerBase
+public class VideoController(ILogger<VideoController> logger, VideoService videoService, VideoLibrarySyncTrigger syncTrigger) : ControllerBase
 {
     [HttpPost("sync")]
     public IActionResult TriggerSync()
     {
-        sync.OnTriggered();
+        syncTrigger.OnTriggered();
         return Ok();
     }
 
