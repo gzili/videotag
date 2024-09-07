@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
+using VideoTag.Server.Configuration;
 using VideoTag.Server.Entities;
 using VideoTag.Server.Helpers;
 using VideoTag.Server.Hubs;
@@ -7,38 +9,28 @@ using VideoTag.Server.Services;
 
 namespace VideoTag.Server.BackgroundServices;
 
-public class VideoLibrarySync : IHostedService
+public class VideoLibrarySync(
+    ILogger<VideoLibrarySync> logger,
+    VideoLibrarySyncTrigger trigger,
+    IOptions<SyncOptions> options,
+    IVideoRepository videoRepository,
+    VideoService videoService,
+    IHubContext<SyncHub> hubContext) : IHostedService
 {
-    private SpinLock _lock;
+    private readonly SyncOptions _syncOptions = options.Value;
+    private SpinLock _lock = new(false);
     private readonly CancellationTokenSource _cancellationTokenSource = new();
-    private readonly ILogger<VideoLibrarySync> _logger;
-    private readonly VideoLibrarySyncTrigger _trigger;
-    private readonly LibraryConfiguration _libraryConfiguration;
-    private readonly IVideoRepository _videoRepository;
-    private readonly VideoService _videoService;
-    private readonly IHubContext<SyncHub> _hubContext;
-
-    public VideoLibrarySync(ILogger<VideoLibrarySync> logger, VideoLibrarySyncTrigger trigger, LibraryConfiguration libraryConfiguration, IVideoRepository videoRepository, VideoService videoService, IHubContext<SyncHub> hubContext)
-    {
-        _lock = new SpinLock(false);
-        _logger = logger;
-        _trigger = trigger;
-        _libraryConfiguration = libraryConfiguration;
-        _videoRepository = videoRepository;
-        _videoService = videoService;
-        _hubContext = hubContext;
-    }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting video library sync background task");
-        _trigger.Triggered += HandleSyncTriggered;
+        logger.LogInformation("Starting video library sync background task");
+        trigger.Triggered += HandleSyncTriggered;
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Stopping video library sync background task");
+        logger.LogInformation("Stopping video library sync background task");
         _cancellationTokenSource.Cancel();
         return Task.CompletedTask;
     }
@@ -54,54 +46,72 @@ public class VideoLibrarySync : IHostedService
         _lock.Enter(ref entered);
         if (!entered)
         {
-            _logger.LogInformation("Could not acquire lock");
+            logger.LogInformation("Could not acquire lock");
             return;
         }
 
         try
         {
-            _logger.LogInformation("Acquired lock");
-            await _hubContext.Clients.All.SendAsync("syncStarted");
+            logger.LogInformation("Acquired lock");
+            await hubContext.Clients.All.SendAsync("syncStarted");
 
             var videoPaths = Directory
-                .EnumerateFiles(_libraryConfiguration.LibraryPath, "*", SearchOption.AllDirectories)
-                .Where(path => _libraryConfiguration.AllowedFileExtensions.Any(path.EndsWith));
+                .EnumerateFiles(_syncOptions.LibraryPath, "*", SearchOption.AllDirectories)
+                .Where(IsAllowedFileExtension);
+
+            if (_syncOptions.ExcludePattern != null)
+            {
+                videoPaths = videoPaths.Where(path => !path.Contains(_syncOptions.ExcludePattern));
+            }
 
             var missingPaths = new List<string>();
             
-            _logger.LogInformation("Scanning for video files in {LibraryPath}", _libraryConfiguration.LibraryPath);
+            logger.LogInformation("Scanning for video files in {LibraryPath}", _syncOptions.LibraryPath);
 
             foreach (var path in videoPaths)
             {
-                if (!await _videoRepository.ExistsByFullPath(path))
+                if (!await videoRepository.ExistsByFullPath(path))
                 {
                     missingPaths.Add(path);
                 }
             }
             
-            _logger.LogInformation("Found {Count} files missing from the library", missingPaths.Count);
+            logger.LogInformation("Found {Count} files missing from the library", missingPaths.Count);
+
+            var numAdded = 0;
+            var numUpdated = 0;
+            var numRemoved = 0;
 
             for (var i = 0; i < missingPaths.Count && !_cancellationTokenSource.IsCancellationRequested; i++)
             {
                 var fullPath = missingPaths[i];
 
-                _logger.LogInformation("Processing file {Index}/{Count}. Path: {Path}", i + 1, missingPaths.Count, fullPath);
-                await _hubContext.Clients.All.SendAsync("syncProgress", fullPath, i + 1, missingPaths.Count);
+                logger.LogInformation("Processing file {Index}/{Count}. Path: {Path}", i + 1, missingPaths.Count, fullPath);
+                await hubContext.Clients.All.SendAsync("syncProgress", fullPath, i + 1, missingPaths.Count);
                 
                 var fileInfo = new FileInfo(fullPath);
                 fileInfo.Refresh();
                 
-                var matchingVideos = (await _videoRepository.GetVideosByFileSizeAndDateModified(fileInfo.Length, fileInfo.LastWriteTimeUtc)).ToList();
+                var matchingVideos = (await videoRepository.GetVideosByFileSizeAndDateModified(fileInfo.Length, fileInfo.LastWriteTimeUtc)).ToList();
 
                 if (matchingVideos.Count == 1)
                 {
-                    await _videoRepository.UpdateFullPath(matchingVideos[0].VideoId, fullPath);
-                    _logger.LogInformation("Updating path from {ExistingPath} to {NewPath}", matchingVideos[0].FullPath, fullPath);
+                    logger.LogInformation("Updating path from {ExistingPath} to {NewPath}", matchingVideos[0].FullPath, fullPath);
+                    await videoRepository.UpdateFullPath(matchingVideos[0].VideoId, fullPath);
+                    numUpdated++;
                     continue;
                 }
 
                 var duration = await Ffprobe.GetVideoDurationInSecondsAsync(fullPath);
-                var thumbnailSeek = (int)(duration * 0.2);
+                int thumbnailSeek;
+                if (_syncOptions.DefaultThumbnailSeek > 1)
+                {
+                    thumbnailSeek = Math.Min((int) _syncOptions.DefaultThumbnailSeek, duration);
+                }
+                else
+                {
+                    thumbnailSeek = (int)(duration * _syncOptions.DefaultThumbnailSeek);
+                }
 
                 var resolution = await Ffprobe.GetVideoResolutionAsync(fullPath);
                 
@@ -116,27 +126,45 @@ public class VideoLibrarySync : IHostedService
                     ThumbnailSeek = thumbnailSeek
                 };
 
-                await _videoService.CreateVideo(video);
+                await videoService.CreateVideo(video);
+                numAdded++;
             }
 
-            await _hubContext.Clients.All.SendAsync("syncFinished");
+            var videos = await videoRepository.GetVideos();
+            foreach (var video in videos)
+            {
+                if (!Path.Exists(video.FullPath))
+                {
+                    logger.LogInformation("Deleting entry for {Path} from the library because the file no longer exists", video.FullPath);
+                    await videoService.DeleteVideo(video.VideoId, true);
+                    numRemoved++;
+                }
+            }
+
+            await hubContext.Clients.All.SendAsync("syncFinished", numAdded, numUpdated, numRemoved);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to sync video library");
-            await _hubContext.Clients.All.SendAsync("syncFailed");
+            logger.LogError(e, "Failed to sync video library");
+            await hubContext.Clients.All.SendAsync("syncFailed");
         }
         finally
         {
             try
             {
                 _lock.Exit();
-                _logger.LogInformation("Released lock");
+                logger.LogInformation("Released lock");
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Could not release lock");
+                logger.LogError(e, "Could not release lock");
             }
         }
+    }
+
+    private bool IsAllowedFileExtension(string path)
+    {
+        var extension = Path.GetExtension(path)[1..];
+        return _syncOptions.AllowedFileExtensions.Any(allowedExtension => extension == allowedExtension);
     }
 }

@@ -1,3 +1,5 @@
+import DeleteIcon from '@mui/icons-material/Delete';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Autocomplete, Box, Button, Chip, Slider, Stack, TextField, Typography } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ReactNode, useCallback, useState } from "react";
@@ -6,9 +8,13 @@ import { TagDto, VideoDto } from "../../api/types";
 import { API_HOST } from "../../env.ts";
 import { formatDuration } from "../../utils.ts";
 import { useTags, useVideo, useVideoId, useVideoQueryKey, useVideoTags } from "./hooks.ts";
+import { DeleteVideoDialog } from '../../components/delete-video-dialog.tsx';
+import { useNavigate } from 'react-router-dom';
 
 export function Video() {
   const { video } = useVideo();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const navigate = useNavigate();
   
   if (video === undefined) {
     return null;
@@ -29,6 +35,32 @@ export function Video() {
           <Typography>{formatIsoDate(video.lastModifiedTimeUtc)}</Typography>
         </Stack>
       </Box>
+      <Stack direction="row" spacing={1} pt="0.8rem" pb="0.6rem">
+        <Button
+          onClick={() => api.playVideo(video.videoId)}
+          variant="contained"
+          disableElevation
+          startIcon={<PlayArrowIcon />}
+        >
+          Play
+        </Button>
+        <Button
+          onClick={() => setIsDeleteDialogOpen(true)}
+          variant="contained"
+          disableElevation
+          startIcon={<DeleteIcon />}
+          color="error"
+        >
+          Delete
+        </Button>
+        <DeleteVideoDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          videoId={video.videoId}
+          videoTitle={video.title}
+          onSuccess={() => navigate(-1)}
+        />
+      </Stack>
       <Tags />
       <Thumbnail video={video} />
     </Box>

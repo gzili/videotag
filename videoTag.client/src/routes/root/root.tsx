@@ -30,7 +30,7 @@ import { formatDuration, formatSize } from "../../utils.ts";
 import { QueryParam, SortBy, SortByType } from './constants.ts';
 import { DeleteCategoryDialog } from './delete-category-dialog.tsx';
 import { DeleteTagDialog } from './delete-tag-dialog.tsx';
-import { DeleteVideoDialog } from './delete-video-dialog.tsx';
+import { DeleteVideoDialog } from '../../components';
 import { EditCategoryDialog } from './edit-category-dialog.tsx';
 import { EditTagDialog } from './edit-tag-dialog.tsx';
 import { useVideos } from "./hooks.ts";
@@ -312,7 +312,8 @@ function Videos() {
         <DeleteVideoDialog
           isOpen={isVideoDeleteDialogOpen}
           onClose={() => setIsVideoDeleteDialogOpen(false)}
-          video={video}
+          videoId={video.videoId}
+          videoTitle={video.title}
         />
       )}
     </Box>

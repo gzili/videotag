@@ -1,0 +1,8 @@
+{
+  "Sync": {
+    "AllowedFileExtensions": ["mp4", "wmv", "mov", "webm", "avi", "m4v"],
+    "LibraryPath": "C:\\Users\\gusta\\Temp\\VideoTag",
+    "DefaultThumbnailSeek": 15,
+    "ExcludePattern": "__vtignore"
+  }
+}
