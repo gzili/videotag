@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CategoryDto } from "../../api/types";
-import { api } from "../../api";
+import { CategoryDto } from "api/types";
+import { api } from "api";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 
 interface DeleteCategoryDialogProps {

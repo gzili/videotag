@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../../api";
+import { api } from "api";
 
 export function useVideoId() {
   const { videoId } = useParams<{ videoId: string }>()

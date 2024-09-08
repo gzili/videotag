@@ -47,6 +47,24 @@ public class VideoController(ILogger<VideoController> logger, VideoService video
             await videoService.PlayVideo(videoId);
             return Ok();
         }
+        catch (FileNotFoundException)
+        {
+            return Conflict();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+    }
+    
+    [HttpDelete("{videoId:guid}")]
+    public async Task<IActionResult> DeleteVideo(Guid videoId, bool keepFileOnDisk)
+    {
+        try
+        {
+            await videoService.DeleteVideo(videoId, keepFileOnDisk);
+            return Ok();
+        }
         catch (InvalidOperationException)
         {
             return NotFound();
@@ -102,19 +120,5 @@ public class VideoController(ILogger<VideoController> logger, VideoService video
         await videoService.RemoveTag(videoId, tagId);
         var tags = await videoService.GetTags(videoId);
         return tags.Select(TagDto.FromTag);
-    }
-
-    [HttpDelete("{videoId:guid}")]
-    public async Task<IActionResult> DeleteVideo(Guid videoId, bool keepFileOnDisk)
-    {
-        try
-        {
-            await videoService.DeleteVideo(videoId, keepFileOnDisk);
-            return Ok();
-        }
-        catch (InvalidOperationException)
-        {
-            return NotFound();
-        }
     }
 }

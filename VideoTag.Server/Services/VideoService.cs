@@ -5,8 +5,10 @@ using VideoTag.Server.Repositories;
 
 namespace VideoTag.Server.Services;
 
-public class VideoService(LibraryConfiguration libraryConfiguration, IVideoRepository videoRepository)
+public class VideoService(IWebHostEnvironment environment, IVideoRepository videoRepository)
 {
+    private readonly string _thumbnailDirectoryPath = Path.Combine(environment.WebRootPath, "images");
+    
     public async Task CreateVideo(Video video)
     {
         await CreateOrReplaceThumbnail(video);
@@ -31,6 +33,12 @@ public class VideoService(LibraryConfiguration libraryConfiguration, IVideoRepos
     public async Task PlayVideo(Guid videoId)
     {
         var video = await videoRepository.GetVideo(videoId);
+
+        if (!Path.Exists(video.FullPath))
+        {
+            throw new FileNotFoundException("Video file does not exist", video.FullPath);
+        }
+        
         Process.Start("explorer", video.FullPath).Dispose();
     }
 
@@ -72,7 +80,7 @@ public class VideoService(LibraryConfiguration libraryConfiguration, IVideoRepos
         
         await videoRepository.DeleteVideo(video.VideoId);
         
-        var thumbnailFileName = Path.Combine(libraryConfiguration.ThumbnailDirectoryPath, $"{video.VideoId:N}.jpg");
+        var thumbnailFileName = GetThumbnailFileName(video);
         File.Delete(thumbnailFileName);
 
         if (!keepFileOnDisk)
@@ -83,7 +91,7 @@ public class VideoService(LibraryConfiguration libraryConfiguration, IVideoRepos
     
     private async Task CreateOrReplaceThumbnail(Video video)
     {
-        var thumbnailFileName = Path.Combine(libraryConfiguration.ThumbnailDirectoryPath, $"{video.VideoId:N}.jpg");
+        var thumbnailFileName = GetThumbnailFileName(video);
         await Ffmpeg.ExtractStillOnDisk(
             video.FullPath,
             thumbnailFileName,
@@ -91,4 +99,7 @@ public class VideoService(LibraryConfiguration libraryConfiguration, IVideoRepos
             640,
             360);
     }
+
+    private string GetThumbnailFileName(Video video) =>
+        Path.Combine(_thumbnailDirectoryPath, $"{video.VideoId:N}.jpg");
 }

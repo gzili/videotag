@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { api } from "../../api";
+import { api } from "api";
 
 export function useVideos() {
   const [searchParams] = useSearchParams();

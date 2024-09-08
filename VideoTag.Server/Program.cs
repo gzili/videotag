@@ -3,8 +3,9 @@ using System.Globalization;
 using System.Text.Json.Serialization;
 using Dapper;
 using EvolveDb;
-using VideoTag.Server;
+using Microsoft.Extensions.Options;
 using VideoTag.Server.BackgroundServices;
+using VideoTag.Server.Configuration;
 using VideoTag.Server.Contexts;
 using VideoTag.Server.Hubs;
 using VideoTag.Server.Repositories;
@@ -19,18 +20,16 @@ SqlMapper.AddTypeHandler(new GuidHandler());
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddOptions<SyncOptions>()
+    .Bind(builder.Configuration.GetSection(SyncOptions.Sync))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IValidateOptions<SyncOptions>, SyncOptionsValidation>();
 
 builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<DapperContext>();
-builder.Services.AddSingleton<LibraryConfiguration>(_ => new LibraryConfiguration
-{
-    LibraryPath = builder.Configuration.GetValue<string>(LibraryConfiguration.LibraryPathKey) ??
-                  throw new Exception($"Missing configuration value for `{LibraryConfiguration.LibraryPathKey}"),
-    AllowedFileExtensions = builder.Configuration.GetSection(LibraryConfiguration.AllowedFileExtensionsKey).Get<List<string>>() ??
-                            throw new Exception($"Missing configuration value for `{LibraryConfiguration.AllowedFileExtensionsKey}`"),
-    ThumbnailDirectoryPath = Path.Combine(builder.Environment.WebRootPath, "images")
-});
 builder.Services.AddSingleton<VideoLibrarySyncTrigger>();
 builder.Services.AddSingleton<IVideoRepository, VideoRepository>();
 builder.Services.AddSingleton<VideoService>();
@@ -59,7 +58,7 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
-builder.Configuration.AddJsonFile("localsettings.json");
+builder.Configuration.AddJsonFile("syncsettings.json");
 
 using (var scope = app.Services.CreateScope())
 {

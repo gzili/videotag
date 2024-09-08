@@ -3,7 +3,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { useCallback, useEffect, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import * as signalR from "@microsoft/signalr";
-import { API_HOST } from './env';
+import { API_HOST } from 'env';
 import { useQueryClient } from '@tanstack/react-query';
 
 const HubEvents = {
@@ -23,14 +23,16 @@ interface ProgressState {
   total: number;
 }
 
-export function Notifications() {
-  const [title, setTitle] = useState<string | null>(null);
-  const [progress, setProgress] = useState<ProgressState | null>(null);
+interface NotificationState {
+  title?: string;
+  description?: string;
+  progress?: ProgressState;
+}
 
-  const handleClose = useCallback(() => {
-    setTitle(null);
-    setProgress(null);
-  }, []);
+export function Notifications() {
+  const [notificationState, setNotificationState] = useState<NotificationState>({});
+
+  const handleClose = useCallback(() => setNotificationState({}), []);
 
   const queryClient = useQueryClient();
 
@@ -39,22 +41,25 @@ export function Notifications() {
       {
         event: HubEvents.SyncStarted,
         handler: () => {
-          setTitle('Sync started');
-          setProgress(null);
+          setNotificationState({ title: 'Sync started' })
         },
       },
       {
         event: HubEvents.SyncProgress,
         handler: (fileName: string, current: number, total: number) => {
-          setTitle('Sync in progress');
-          setProgress({ fileName, current, total });
+          setNotificationState({
+            title: 'Sync in progress',
+            progress: { fileName, current, total },
+          });
         },
       },
       {
         event: HubEvents.SyncFinished,
-        handler: () => {
-          setTitle('Sync finished');
-          setProgress(null);
+        handler: (numAdded: number, numUpdated: number, numRemoved: number) => {
+          setNotificationState({
+            title: 'Sync finished',
+            description: `Added ${numAdded} entries. Updated ${numUpdated} entries. Removed ${numRemoved} entries.`,
+          })
           queryClient.invalidateQueries({
             queryKey: ['videos'],
           });
@@ -63,8 +68,7 @@ export function Notifications() {
       {
         event: HubEvents.SyncFailed,
         handler: () => {
-          setTitle('Sync failed');
-          setProgress(null);
+          setNotificationState({ title: 'Sync failed' })
         },
       },
     ];
@@ -81,12 +85,20 @@ export function Notifications() {
   }, [queryClient]);
 
   useEffect(() => {
+    connection.onclose(() => {
+      setNotificationState({
+        title: 'Disconnected from the server',
+      });
+    });
+  }, []);
+
+  useEffect(() => {
     if (connection.state === signalR.HubConnectionState.Disconnected) {
       connection.start().catch((error) => { console.log(error) });
     }
   }, []);
 
-  if (title === null) {
+  if (!notificationState.title) {
     return null;
   }
   
@@ -105,20 +117,28 @@ export function Notifications() {
     >
       <Box width="400px">
         <Typography fontWeight="bold">
-          {title}
+          {notificationState.title}
         </Typography>
-        {progress && (
+        {notificationState.progress && (
           <>
             <Typography fontSize="0.8rem" overflow="hidden" sx={{ wordWrap: 'break-word' }} pt="0.2rem" pb="0.4rem">
-              {progress.fileName}
+              {notificationState.progress.fileName}
             </Typography>
             <Box>
-              <LinearProgress variant="determinate" value={Math.floor(progress.current / progress.total * 100)} />
+              <LinearProgress
+                variant="determinate"
+                value={Math.floor(notificationState.progress.current / notificationState.progress.total * 100)}
+              />
             </Box>
             <Typography fontSize="0.8rem" color="grey.600" pt="0.4rem">
-              {progress.current} of {progress.total}
+              {notificationState.progress.current} of {notificationState.progress.total}
             </Typography>
           </>
+        )}
+        {notificationState.description && (
+          <Typography fontSize="0.8rem" pt="0.2rem">
+            {notificationState.description}
+          </Typography>
         )}
       </Box>
       <Box pl="0.8rem">

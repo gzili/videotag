@@ -1,8 +1,8 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
-import { CategoryCreateOrUpdateDto, CategoryDto } from "../../api/types";
+import { CategoryCreateOrUpdateDto, CategoryDto } from "api/types";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../api";
+import { api } from "api";
 
 interface EditCategoryDialogProps {
   isOpen: boolean;

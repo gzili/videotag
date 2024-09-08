@@ -1,8 +1,8 @@
 import { Autocomplete, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from "@mui/material";
-import { CategoryDto, TagCreateOrUpdateDto, TagDto } from "../../api/types";
+import { CategoryDto, TagCreateOrUpdateDto, TagDto } from "api/types";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../api";
+import { api } from "api";
 
 interface EditTagDialogProps {
   isOpen: boolean;

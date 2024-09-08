@@ -2,42 +2,57 @@ import { Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogCont
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "../../api";
-import { VideoListItemDto } from "../../api/types";
+import { api } from "../api";
 
-interface DeleteVideoDialogProps {
-  isOpen: boolean;
+interface DeleteVideoDialogContentProps {
+  videoId: string;
+  videoTitle: string;
   onClose: () => void;
-  video: VideoListItemDto;
+  onSuccess?: () => void;
+}
+
+interface DeleteVideoDialogProps extends DeleteVideoDialogContentProps {
+  isOpen: boolean;
 }
 
 export function DeleteVideoDialog(props: DeleteVideoDialogProps) {
-  const { isOpen, onClose, video } = props;
+  const { isOpen, onClose, ...contentProps } = props;
   
+  return (
+    <Dialog
+      open={isOpen}
+      maxWidth="sm"
+      fullWidth
+    >
+      <DeleteVideoDialogContent onClose={onClose} {...contentProps} />
+    </Dialog>
+  );
+}
+
+function DeleteVideoDialogContent(props: DeleteVideoDialogContentProps) {
+  const { onClose, videoId, videoTitle, onSuccess } = props;
+
   const [keepFileOnDisk, setKeepFileOnDisk] = useState(false);
   
   const queryClient = useQueryClient();
   
   const { mutate: deleteVideo } = useMutation({
-    mutationFn: () => api.deleteVideo(video.videoId, keepFileOnDisk),
+    mutationFn: () => api.deleteVideo(videoId, keepFileOnDisk),
     onSuccess: () => {
-      onClose();
       queryClient.invalidateQueries({
         queryKey: ['videos'],
       });
+      onClose();
+      onSuccess?.();
     },
   });
-  
+
   return (
-    <Dialog
-      open={isOpen}
-      maxWidth="xs"
-      fullWidth
-    >
+    <>
       <DialogTitle>Remove video?</DialogTitle>
       <DialogContent>
-        <DialogContentText>Video "{video.title}" will be removed from the library.</DialogContentText>
-        <Box>
+        <DialogContentText>Video "<b>{videoTitle}</b>" will be removed from the library.</DialogContentText>
+        <Box pt="0.2rem">
           <FormControlLabel
             control={<Checkbox checked={keepFileOnDisk} onChange={e => setKeepFileOnDisk(e.target.checked)} />}
             label="Keep file on disk"
@@ -52,9 +67,9 @@ export function DeleteVideoDialog(props: DeleteVideoDialogProps) {
           disableElevation
           onClick={() => { deleteVideo() }}
         >
-          Delete
+          Remove
         </Button>
       </DialogActions>
-    </Dialog>
+    </>
   );
 }
