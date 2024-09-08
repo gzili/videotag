@@ -85,6 +85,14 @@ export function Notifications() {
   }, [queryClient]);
 
   useEffect(() => {
+    connection.onclose(() => {
+      setNotificationState({
+        title: 'Disconnected from the server',
+      });
+    });
+  }, []);
+
+  useEffect(() => {
     if (connection.state === signalR.HubConnectionState.Disconnected) {
       connection.start().catch((error) => { console.log(error) });
     }
