@@ -51,7 +51,7 @@ function DeleteVideoDialogContent(props: DeleteVideoDialogContentProps) {
     <>
       <DialogTitle>Remove video?</DialogTitle>
       <DialogContent>
-        <DialogContentText>Video "{videoTitle}" will be removed from the library.</DialogContentText>
+        <DialogContentText>Video "<b>{videoTitle}</b>" will be removed from the library.</DialogContentText>
         <Box pt="0.2rem">
           <FormControlLabel
             control={<Checkbox checked={keepFileOnDisk} onChange={e => setKeepFileOnDisk(e.target.checked)} />}
@@ -67,7 +67,7 @@ function DeleteVideoDialogContent(props: DeleteVideoDialogContentProps) {
           disableElevation
           onClick={() => { deleteVideo() }}
         >
-          Delete
+          Remove
         </Button>
       </DialogActions>
     </>
