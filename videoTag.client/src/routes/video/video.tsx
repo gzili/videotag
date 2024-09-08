@@ -2,7 +2,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Autocomplete, Box, Button, Chip, Slider, Stack, TextField, Typography } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ReactNode, useCallback, useState } from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { api } from "api";
 import { TagDto, VideoDto } from "api/types";
 import { API_HOST } from "env.ts";
@@ -180,10 +180,15 @@ interface ThumbnailProps {
 
 function Thumbnail(props: ThumbnailProps) {
   const { video } = props;
+
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [seek, setSeek] = useState(video.thumbnailSeek);
   const [sliderValue, setSliderValue] = useState(seek);
   const handleSeekChange = useCallback((seek: number) => {
+    setIsLoading(true);
+
     if (seek < 0) {
       seek = 0;
     }
@@ -204,6 +209,24 @@ function Thumbnail(props: ThumbnailProps) {
       queryClient.setQueryData(videoQueryKey, data);
     },
   });
+
+  useEffect(() => {
+    const imageEl = imageRef.current;
+
+    if (!imageEl) {
+      return;
+    }
+
+    const handleImageLoad = () => {
+      setIsLoading(false);
+    };
+
+    imageEl.addEventListener('load', handleImageLoad);
+
+    return () => {
+      imageEl.removeEventListener('load', handleImageLoad);
+    }
+  }, []);
   
   return (
     <Box pb={2}>
@@ -220,6 +243,7 @@ function Thumbnail(props: ThumbnailProps) {
       </Box>
       <Box pt="2px">
         <Box
+          ref={imageRef}
           component="img"
           src={`${API_HOST}/api/videos/${video.videoId}/thumbnail?seek=${seek}`}
           display="block"
@@ -234,25 +258,26 @@ function Thumbnail(props: ThumbnailProps) {
               max={video.duration}
               value={sliderValue}
               onChange={(_, value) => setSliderValue(value as number)}
-              onChangeCommitted={(_, value) => setSeek(value as number)}
+              onChangeCommitted={(_, value) => handleSeekChange(value as number)}
+              disabled={isLoading}
             />
           </Box>
           <DurationLabel duration={video.duration} />
         </Stack>
         <Box display="flex" justifyContent="center">
           <Box display="flex" alignItems="center" gap={1}>
-            <SeekButton onClick={() => handleSeekChange(seek - 10)}>-10s</SeekButton>
-            <SeekButton onClick={() => handleSeekChange(seek - 1)}>-1s</SeekButton>
+            <SeekButton onClick={() => handleSeekChange(seek - 10)} disabled={isLoading}>-10s</SeekButton>
+            <SeekButton onClick={() => handleSeekChange(seek - 1)} disabled={isLoading}>-1s</SeekButton>
             <Button
               variant="contained"
               disableElevation
-              disabled={seek === video.thumbnailSeek}
               onClick={() => handleSeekChange(video.thumbnailSeek)}
+              disabled={isLoading || seek === video.thumbnailSeek}
             >
               Reset
             </Button>
-            <SeekButton onClick={() => handleSeekChange(seek + 1)}>+1s</SeekButton>
-            <SeekButton onClick={() => handleSeekChange(seek + 10)}>+10s</SeekButton>
+            <SeekButton onClick={() => handleSeekChange(seek + 1)} disabled={isLoading}>+1s</SeekButton>
+            <SeekButton onClick={() => handleSeekChange(seek + 10)} disabled={isLoading}>+10s</SeekButton>
           </Box>
         </Box>
       </Box>
@@ -273,12 +298,13 @@ function DurationLabel(props: DurationLabelProps) {
 }
 
 interface SeekButtonProps {
+  disabled?: boolean;
   onClick?: () => void;
   children?: ReactNode;
 }
 
 function SeekButton(props: SeekButtonProps) {
-  const { onClick, children } = props;
+  const { onClick, children, disabled } = props;
   
   return (
     <Button
@@ -286,6 +312,7 @@ function SeekButton(props: SeekButtonProps) {
       disableElevation
       sx={{ px: '8px', py: 0, minWidth: 0, textTransform: 'none' }}
       onClick={onClick}
+      disabled={disabled}
     >
       {children}
     </Button>
