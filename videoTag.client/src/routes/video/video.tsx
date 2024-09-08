@@ -3,12 +3,12 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Autocomplete, Box, Button, Chip, Slider, Stack, TextField, Typography } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ReactNode, useCallback, useState } from "react";
-import { api } from "../../api";
-import { TagDto, VideoDto } from "../../api/types";
-import { API_HOST } from "../../env.ts";
-import { formatDuration } from "../../utils.ts";
+import { api } from "api";
+import { TagDto, VideoDto } from "api/types";
+import { API_HOST } from "env.ts";
+import { formatDuration } from "utils.ts";
 import { useTags, useVideo, useVideoId, useVideoQueryKey, useVideoTags } from "./hooks.ts";
-import { DeleteVideoDialog } from '../../components/delete-video-dialog.tsx';
+import { DeleteVideoDialog } from 'components/delete-video-dialog.tsx';
 import { useNavigate } from 'react-router-dom';
 
 export function Video() {

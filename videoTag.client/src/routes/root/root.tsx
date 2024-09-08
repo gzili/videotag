@@ -21,16 +21,16 @@ import {
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { api } from "../../api";
-import { CategoryDto, TagDto, VideoListItemDto } from '../../api/types';
-import { API_HOST } from "../../env.ts";
-import { useCategories } from '../../hooks';
-import { formatDuration, formatSize } from "../../utils.ts";
+import { api } from "api";
+import { CategoryDto, TagDto, VideoListItemDto } from 'api/types';
+import { DeleteVideoDialog } from 'components';
+import { API_HOST } from "env.ts";
+import { useCategories } from 'hooks';
+import { formatDuration, formatSize } from "utils.ts";
 
 import { QueryParam, SortBy, SortByType } from './constants.ts';
 import { DeleteCategoryDialog } from './delete-category-dialog.tsx';
 import { DeleteTagDialog } from './delete-tag-dialog.tsx';
-import { DeleteVideoDialog } from '../../components';
 import { EditCategoryDialog } from './edit-category-dialog.tsx';
 import { EditTagDialog } from './edit-tag-dialog.tsx';
 import { useVideos } from "./hooks.ts";

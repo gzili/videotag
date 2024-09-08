@@ -1,7 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../api";
-import { TagDto } from "../../api/types";
+import { api } from "api";
+import { TagDto } from "api/types";
 
 interface DeleteTagDialogProps {
   isOpen: boolean;

@@ -3,7 +3,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { useCallback, useEffect, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import * as signalR from "@microsoft/signalr";
-import { API_HOST } from './env';
+import { API_HOST } from 'env';
 import { useQueryClient } from '@tanstack/react-query';
 
 const HubEvents = {
