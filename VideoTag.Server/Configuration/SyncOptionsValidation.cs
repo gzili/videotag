@@ -8,9 +8,12 @@ public class SyncOptionsValidation : IValidateOptions<SyncOptions>
     {
         var errorMessage = "";
 
-        if (!Path.Exists(options.LibraryPath))
+        foreach (var folder in options.Folders)
         {
-            errorMessage += $"Library path \"{options.LibraryPath}\" does not exist.\n";
+            if (!Path.Exists(folder))
+            {
+                errorMessage += $"Folder \"{folder}\" does not exist.\n";
+            }
         }
 
         return !string.IsNullOrEmpty(errorMessage) ? ValidateOptionsResult.Fail(errorMessage) : ValidateOptionsResult.Success;

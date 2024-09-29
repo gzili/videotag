@@ -1,7 +1,7 @@
 {
   "Sync": {
+    "Folders": ["C:\\Path\\To\\Library"],
     "AllowedFileExtensions": ["mp4", "wmv", "mov", "webm", "avi", "m4v", "mkv", "m2ts"],
-    "LibraryPath": "C:\\Path\\To\\Library",
     "DefaultThumbnailSeek": 0.2,
     "ExcludePattern": "__vtignore"
   }

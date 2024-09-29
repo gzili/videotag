@@ -55,39 +55,26 @@ public class VideoLibrarySync(
             logger.LogInformation("Acquired lock");
             await hubContext.Clients.All.SendAsync("syncStarted");
 
-            var videoPaths = Directory
-                .EnumerateFiles(_syncOptions.LibraryPath, "*", SearchOption.AllDirectories)
-                .Where(IsAllowedFileExtension);
+            var missingFiles = new List<string>();
 
-            if (_syncOptions.ExcludePattern != null)
+            foreach (var folder in _syncOptions.Folders)
             {
-                videoPaths = videoPaths.Where(path => !path.Contains(_syncOptions.ExcludePattern));
-            }
-
-            var missingPaths = new List<string>();
-            
-            logger.LogInformation("Scanning for video files in {LibraryPath}", _syncOptions.LibraryPath);
-
-            foreach (var path in videoPaths)
-            {
-                if (!await videoRepository.ExistsByFullPath(path))
-                {
-                    missingPaths.Add(path);
-                }
+                logger.LogInformation("Scanning for video files in {Folder}", folder);
+                await AddMissingFiles(missingFiles, folder);
             }
             
-            logger.LogInformation("Found {Count} files missing from the library", missingPaths.Count);
+            logger.LogInformation("Found {Count} files missing from the library", missingFiles.Count);
 
             var numAdded = 0;
             var numUpdated = 0;
             var numRemoved = 0;
 
-            for (var i = 0; i < missingPaths.Count && !_cancellationTokenSource.IsCancellationRequested; i++)
+            for (var i = 0; i < missingFiles.Count && !_cancellationTokenSource.IsCancellationRequested; i++)
             {
-                var fullPath = missingPaths[i];
+                var fullPath = missingFiles[i];
 
-                logger.LogInformation("Processing file {Index}/{Count}. Path: {Path}", i + 1, missingPaths.Count, fullPath);
-                await hubContext.Clients.All.SendAsync("syncProgress", fullPath, i + 1, missingPaths.Count);
+                logger.LogInformation("Processing file {Index}/{Count}. Path: {Path}", i + 1, missingFiles.Count, fullPath);
+                await hubContext.Clients.All.SendAsync("syncProgress", fullPath, i + 1, missingFiles.Count);
                 
                 var fileInfo = new FileInfo(fullPath);
                 fileInfo.Refresh();
@@ -158,6 +145,26 @@ public class VideoLibrarySync(
             catch (Exception e)
             {
                 logger.LogError(e, "Could not release lock");
+            }
+        }
+    }
+
+    private async Task AddMissingFiles(List<string> missingFiles, string directory)
+    {
+        var videoPaths = Directory
+            .EnumerateFiles(directory, "*", SearchOption.AllDirectories)
+            .Where(IsAllowedFileExtension);
+
+        if (_syncOptions.ExcludePattern != null)
+        {
+            videoPaths = videoPaths.Where(path => !path.Contains(_syncOptions.ExcludePattern));
+        }
+
+        foreach (var path in videoPaths)
+        {
+            if (!await videoRepository.ExistsByFullPath(path))
+            {
+                missingFiles.Add(path);
             }
         }
     }
