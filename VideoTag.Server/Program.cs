@@ -19,6 +19,8 @@ SqlMapper.AddTypeHandler(new GuidHandler());
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddJsonFile("syncsettings.json");
+
 // Add services to the container.
 builder.Services.AddOptions<SyncOptions>()
     .Bind(builder.Configuration.GetSection(SyncOptions.Sync))
@@ -58,8 +60,6 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
-builder.Configuration.AddJsonFile("syncsettings.json");
-
 using (var scope = app.Services.CreateScope())
 {
     var serviceProvider = scope.ServiceProvider;
@@ -67,7 +67,10 @@ using (var scope = app.Services.CreateScope())
     var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
     using (var connection = dapperContext.CreateConnection())
     {
-        var evolve = new Evolve((DbConnection)connection, msg => logger.LogInformation("{Message}", msg))
+        var evolve = new Evolve(
+            (DbConnection)connection,
+            msg => logger.LogInformation("{Message}", msg)
+        )
         {
             Locations = new[] { "Migrations" },
             MetadataTableName = "Migrations",

@@ -5,11 +5,12 @@ namespace VideoTag.Server.Configuration;
 public class SyncOptions
 {
     public const string Sync = "Sync";
+    
+    [MinLength(1, ErrorMessage = "{0} must contain at least {1} folder path")]
+    public List<string> Folders { get; set; } = [];
 
+    [MinLength(1, ErrorMessage = "{0} must contain at least {1} file extension")]
     public List<string> AllowedFileExtensions { get; set; } = [];
-
-    [Required]
-    public string LibraryPath { get; set; } = null!;
 
     public decimal DefaultThumbnailSeek { get; set; } = 0.2m;
     
