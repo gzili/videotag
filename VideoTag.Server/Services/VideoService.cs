@@ -39,7 +39,7 @@ public class VideoService(IWebHostEnvironment environment, IVideoRepository vide
             throw new FileNotFoundException("Video file does not exist", video.FullPath);
         }
         
-        Process.Start("explorer", video.FullPath).Dispose();
+        Process.Start("explorer", $"\"{video.FullPath}\"").Dispose();
     }
 
     public async Task<byte[]> GetVideoThumbnailAtSeek(Guid videoId, int seekInSeconds)
