@@ -8,7 +8,7 @@ namespace VideoTag.Server.Controllers;
 
 [ApiController]
 [Route("api/videos")]
-public class VideoController(ILogger<VideoController> logger, VideoService videoService, VideoLibrarySyncTrigger syncTrigger) : ControllerBase
+public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger syncTrigger) : ControllerBase
 {
     [HttpPost("sync")]
     public IActionResult TriggerSync()
@@ -27,7 +27,7 @@ public class VideoController(ILogger<VideoController> logger, VideoService video
         }
         else
         {
-            videos = await videoService.GetVideos(tagIds);
+            videos = await videoService.GetVideosContainingAllTags(tagIds);
         }
         return videos.Select(VideoListItemDto.FromVideo);
     }

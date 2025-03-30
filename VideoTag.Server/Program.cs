@@ -34,7 +34,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddSingleton<VideoLibrarySyncTrigger>();
 builder.Services.AddSingleton<IVideoRepository, VideoRepository>();
-builder.Services.AddSingleton<VideoService>();
+builder.Services.AddSingleton<IVideoService, VideoService>();
 builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
 builder.Services.AddSingleton<ITagRepository, TagRepository>();
@@ -72,7 +72,7 @@ using (var scope = app.Services.CreateScope())
             msg => logger.LogInformation("{Message}", msg)
         )
         {
-            Locations = new[] { "Migrations" },
+            Locations = ["Migrations"],
             MetadataTableName = "Migrations",
             IsEraseDisabled = true
         };

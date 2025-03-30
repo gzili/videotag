@@ -4,6 +4,14 @@ using VideoTag.Server.Repositories;
 
 namespace VideoTag.Server.Services;
 
+public interface ICategoryService
+{
+    Task<Category> CreateCategory(CategoryCreateOrUpdateDto dto);
+    Task<IEnumerable<Category>> GetCategories(bool includeTags = false);
+    Task<Category> UpdateCategory(Guid categoryId, CategoryCreateOrUpdateDto dto);
+    Task DeleteCategory(Guid categoryId);
+}
+
 public class CategoryService(ICategoryRepository categoryRepository) : ICategoryService
 {
     public async Task<Category> CreateCategory(CategoryCreateOrUpdateDto dto)
