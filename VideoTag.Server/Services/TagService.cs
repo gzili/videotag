@@ -4,6 +4,15 @@ using VideoTag.Server.Repositories;
 
 namespace VideoTag.Server.Services;
 
+public interface ITagService
+{
+    Task<Tag> CreateTag(TagCreateOrUpdateDto dto);
+    Task<IEnumerable<Tag>> GetTags();
+    Task<Tag> GetTag(Guid tagId);
+    Task<Tag> UpdateTag(Guid tagId, TagCreateOrUpdateDto dto);
+    Task DeleteTag(Guid tagId);
+}
+
 public class TagService(ITagRepository tagRepository, ICategoryRepository categoryRepository) : ITagService
 {
     public async Task<Tag> CreateTag(TagCreateOrUpdateDto dto)

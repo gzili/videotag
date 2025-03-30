@@ -5,7 +5,22 @@ using VideoTag.Server.Repositories;
 
 namespace VideoTag.Server.Services;
 
-public class VideoService(IWebHostEnvironment environment, IVideoRepository videoRepository)
+public interface IVideoService
+{
+    Task CreateVideo(Video video);
+    Task<IEnumerable<Video>> GetVideos();
+    Task<IEnumerable<Video>> GetVideosContainingAllTags(Guid[] tagIds);
+    Task<Video> GetVideo(Guid videoId);
+    Task PlayVideo(Guid videoId);
+    Task<byte[]> GetVideoThumbnailAtSeek(Guid videoId, int seekInSeconds);
+    Task<Video> UpdateThumbnailSeek(Guid videoId, int seek);
+    Task AddTag(Guid videoId, Guid tagId);
+    Task<IEnumerable<Tag>> GetTags(Guid videoId);
+    Task RemoveTag(Guid videoId, Guid tagId);
+    Task DeleteVideo(Guid videoId, bool keepFileOnDisk);
+}
+
+public class VideoService(IWebHostEnvironment environment, IVideoRepository videoRepository) : IVideoService
 {
     private readonly string _thumbnailDirectoryPath = Path.Combine(environment.WebRootPath, "images");
     
@@ -20,7 +35,7 @@ public class VideoService(IWebHostEnvironment environment, IVideoRepository vide
         return await videoRepository.GetVideos();
     }
 
-    public async Task<IEnumerable<Video>> GetVideos(Guid[] tagIds)
+    public async Task<IEnumerable<Video>> GetVideosContainingAllTags(Guid[] tagIds)
     {
         return await videoRepository.GetVideos(tagIds);
     }
@@ -39,7 +54,7 @@ public class VideoService(IWebHostEnvironment environment, IVideoRepository vide
             throw new FileNotFoundException("Video file does not exist", video.FullPath);
         }
         
-        Process.Start("explorer", video.FullPath).Dispose();
+        Process.Start("explorer", $"\"{video.FullPath}\"").Dispose();
     }
 
     public async Task<byte[]> GetVideoThumbnailAtSeek(Guid videoId, int seekInSeconds)
