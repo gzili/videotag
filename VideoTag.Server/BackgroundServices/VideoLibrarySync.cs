@@ -23,47 +23,47 @@ public class VideoLibrarySync(
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Starting video library sync background task");
+        logger.LogInformation("Starting video library sync background task...");
         trigger.Triggered += HandleSyncTriggered;
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Stopping video library sync background task");
+        logger.LogInformation("Stopping video library sync background task...");
         _cancellationTokenSource.Cancel();
         return Task.CompletedTask;
     }
 
     private void HandleSyncTriggered(object? sender, EventArgs args)
     {
-        Task.Run(async () => await Sync());
+        Task.Run(Sync);
     }
 
     private async Task Sync()
     {
-        var entered = false;
-        _lock.Enter(ref entered);
-        if (!entered)
+        var lockAcquired = false;
+        _lock.Enter(ref lockAcquired);
+        if (!lockAcquired)
         {
-            logger.LogInformation("Could not acquire lock");
+            logger.LogInformation("Could not acquire lock.");
             return;
         }
 
         try
         {
-            logger.LogInformation("Acquired lock");
+            logger.LogInformation("Acquired lock.");
             await hubContext.Clients.All.SendAsync("syncStarted");
 
             var missingFiles = new List<string>();
 
             foreach (var folder in _syncOptions.Folders)
             {
-                logger.LogInformation("Scanning for video files in {Folder}", folder);
+                logger.LogInformation("Scanning for video files in {Folder}.", folder);
                 await AddMissingFiles(missingFiles, folder);
             }
             
-            logger.LogInformation("Found {Count} files missing from the library", missingFiles.Count);
+            logger.LogInformation("Found {Count} files missing from the library.", missingFiles.Count);
 
             var numAdded = 0;
             var numUpdated = 0;
@@ -73,7 +73,7 @@ public class VideoLibrarySync(
             {
                 var fullPath = missingFiles[i];
 
-                logger.LogInformation("Processing file {Index}/{Count}. Path: {Path}", i + 1, missingFiles.Count, fullPath);
+                logger.LogInformation("Processing file {Index}/{Count}. Path: {Path}.", i + 1, missingFiles.Count, fullPath);
                 await hubContext.Clients.All.SendAsync("syncProgress", fullPath, i + 1, missingFiles.Count);
                 
                 var fileInfo = new FileInfo(fullPath);
@@ -83,7 +83,7 @@ public class VideoLibrarySync(
 
                 if (matchingVideos.Count == 1)
                 {
-                    logger.LogInformation("Updating path from {ExistingPath} to {NewPath}", matchingVideos[0].FullPath, fullPath);
+                    logger.LogInformation("Updating path from {ExistingPath} to {NewPath}.", matchingVideos[0].FullPath, fullPath);
                     await videoRepository.UpdateFullPath(matchingVideos[0].VideoId, fullPath);
                     numUpdated++;
                     continue;
@@ -122,7 +122,7 @@ public class VideoLibrarySync(
             {
                 if (!Path.Exists(video.FullPath))
                 {
-                    logger.LogInformation("Deleting entry for {Path} from the library because the file no longer exists", video.FullPath);
+                    logger.LogInformation("File {Path} no longer exists. Deleting library entry.", video.FullPath);
                     await videoService.DeleteVideo(video.VideoId, true);
                     numRemoved++;
                 }
@@ -132,7 +132,7 @@ public class VideoLibrarySync(
         }
         catch (Exception e)
         {
-            logger.LogError(e, "Failed to sync video library");
+            logger.LogError(e, "Failed to sync video library.");
             await hubContext.Clients.All.SendAsync("syncFailed");
         }
         finally
@@ -140,11 +140,11 @@ public class VideoLibrarySync(
             try
             {
                 _lock.Exit();
-                logger.LogInformation("Released lock");
+                logger.LogInformation("Released lock.");
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Could not release lock");
+                logger.LogError(e, "Could not release lock.");
             }
         }
     }
