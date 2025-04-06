@@ -18,7 +18,7 @@ import {
   Switch,
   Typography
 } from "@mui/material";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api } from "api";
@@ -235,12 +235,19 @@ function tagInCategoryToTagDto(tag: CategoryDto['tags'][0], category: CategoryDt
 }
 
 function Videos() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const sortBy = searchParams.get('sortBy') || SortBy.LastModified;
+
+  const setSortBy = useCallback((sortBy: string) => {
+    setSearchParams(searchParams => {
+      searchParams.set(QueryParam.SortBy, sortBy);
+      return searchParams;
+    })
+  }, [setSearchParams]);
   
   const { videos } = useVideos();
-  
-  const [sortBy, setSortBy] = useState<SortByType>(SortBy.LastModified);
-  
+    
   useMemo(() => {
     if (videos !== undefined) {
       switch (sortBy) {
