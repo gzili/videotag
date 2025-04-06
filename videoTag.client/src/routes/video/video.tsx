@@ -26,9 +26,9 @@ export function Video() {
         <Typography fontSize={24} fontWeight="bold" pt={1}>{video.title}</Typography>
         <Typography fontSize="0.8rem" color="grey.600">{video.fullPath}</Typography>
         <Stack spacing={1} direction="row" alignItems="center" pt="2px" color="grey.800">
-          <Typography>{video.resolution}</Typography>
+          <Typography>{video.width}x{video.height}</Typography>
           <Bullet />
-          <Typography>{formatDuration(video.duration)}</Typography>
+          <Typography>{formatDuration(video.durationInSeconds)}</Typography>
           <Bullet />
           <Typography>{formatSize(video.size)}</Typography>
           <Bullet />
@@ -186,6 +186,9 @@ function Thumbnail(props: ThumbnailProps) {
   
   const [seek, setSeek] = useState(video.thumbnailSeek);
   const [sliderValue, setSliderValue] = useState(seek);
+
+  const intDuration = Math.floor(video.durationInSeconds);
+
   const handleSeekChange = useCallback((seek: number) => {
     setIsLoading(true);
 
@@ -193,13 +196,13 @@ function Thumbnail(props: ThumbnailProps) {
       seek = 0;
     }
     
-    if (seek > video.duration) {
-      seek = video.duration;
+    if (seek > intDuration) {
+      seek = intDuration;
     }
     
     setSeek(seek);
     setSliderValue(seek);
-  }, [video.duration]);
+  }, [intDuration]);
   
   const queryClient = useQueryClient();
   const videoQueryKey = useVideoQueryKey();
@@ -255,14 +258,14 @@ function Thumbnail(props: ThumbnailProps) {
           <Box flex="1">
             <Slider
               min={0}
-              max={video.duration}
+              max={intDuration}
               value={sliderValue}
               onChange={(_, value) => setSliderValue(value as number)}
               onChangeCommitted={(_, value) => handleSeekChange(value as number)}
               disabled={isLoading}
             />
           </Box>
-          <DurationLabel duration={video.duration} />
+          <DurationLabel duration={intDuration} />
         </Stack>
         <Box display="flex" justifyContent="center">
           <Box display="flex" alignItems="center" gap={1}>

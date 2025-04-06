@@ -1,5 +1,5 @@
 export function formatDuration(seconds: number) {
-  let secondsRemaining = seconds;
+  let secondsRemaining = Math.floor(seconds);
 
   const hours = Math.floor(seconds / 3600);
   secondsRemaining -= hours * 3600;
