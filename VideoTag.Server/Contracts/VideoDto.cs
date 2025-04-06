@@ -10,9 +10,13 @@ public class VideoDto
     
     public string FullPath { get; set; }
     
-    public int Duration { get; set; }
+    public int Width { get; set; }
     
-    public string Resolution { get; set; }
+    public int Height { get; set; }
+    
+    public double Framerate { get; set; }
+    
+    public double DurationInSeconds { get; set; }
     
     public long Size { get; set; }
     
@@ -20,7 +24,7 @@ public class VideoDto
     
     public string ThumbnailUrl { get; set; }
     
-    public int ThumbnailSeek { get; set; }
+    public double ThumbnailSeek { get; set; }
 
     public static VideoDto FromVideo(Video video)
     {
@@ -29,11 +33,13 @@ public class VideoDto
             VideoId = video.VideoId,
             Title = Path.GetFileName(video.FullPath),
             FullPath = video.FullPath,
-            Duration = video.Duration,
-            Resolution = video.Resolution,
+            Width = video.Width,
+            Height = video.Height,
+            Framerate = video.Framerate,
+            DurationInSeconds = video.DurationInSeconds,
             Size = video.Size,
             LastModifiedTimeUtc = video.LastModifiedTimeUtc,
-            ThumbnailUrl = $"/images/{video.VideoId:N}.jpg",
+            ThumbnailUrl = $"/images/{video.VideoId:N}_large.jpg",
             ThumbnailSeek = video.ThumbnailSeek
         };
     }

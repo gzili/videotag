@@ -32,6 +32,8 @@ builder.Services.AddSingleton<IValidateOptions<SyncOptions>, SyncOptionsValidati
 builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<DapperContext>();
+builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
+builder.Services.AddSingleton<IMetaRepository, MetaRepository>();
 builder.Services.AddSingleton<VideoLibrarySyncTrigger>();
 builder.Services.AddSingleton<IVideoRepository, VideoRepository>();
 builder.Services.AddSingleton<IVideoService, VideoService>();
@@ -39,7 +41,9 @@ builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
 builder.Services.AddSingleton<ITagRepository, TagRepository>();
 builder.Services.AddSingleton<ITagService, TagService>();
+builder.Services.AddSingleton<ILibraryService, LibraryService>();
 
+builder.Services.AddHostedService<RebuildJob>();
 builder.Services.AddHostedService<VideoLibrarySync>();
 
 builder.Services.AddCors(options =>

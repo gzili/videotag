@@ -86,7 +86,7 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
     }
 
     [HttpPut("{videoId:guid}/thumbnail")]
-    public async Task<ActionResult<VideoDto>> UpdateThumbnail(Guid videoId, int seek)
+    public async Task<ActionResult<VideoDto>> UpdateThumbnailSeek(Guid videoId, int seek)
     {
         try
         {
@@ -97,6 +97,15 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
         {
             return NotFound();
         }
+    }
+
+    [HttpPost("{videoId:guid}/custom-thumbnail")]
+    public async Task<IActionResult> UploadThumbnail(Guid videoId, UploadCustomThumbnailDto dto)
+    {
+        var stream = new MemoryStream((int)dto.File.Length);
+        await dto.File.CopyToAsync(stream);
+        await videoService.SaveCustomThumbnail(videoId, stream.ToArray());
+        return Ok();
     }
 
     [HttpPost("{videoId:guid}/tags/{tagId:guid}")]
