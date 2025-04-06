@@ -8,14 +8,10 @@ public static class Ffprobe
     {
         var arguments = $"-v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,duration,bit_rate -of csv=p=0 \"{path}\"";
         var output = await ProcessAsyncHelper.RunProcessAndReadStringAsync("ffprobe", arguments);
-
-        var newLineIndex = output.IndexOfAny(['\r', '\n']);
-        if (newLineIndex < 0)
-            throw new Exception("Expected new line character in output");
         
-        var values = output[..newLineIndex].Split(',');
-        if (values.Length < 4)
-            throw new Exception($"Expected at least 4 values but got {values.Length}");
+        var values = output.Split(',', 5 + 1);
+        if (values.Length < 5)
+            throw new Exception($"Expected at least 5 values but got {values.Length}");
         
         var width = int.Parse(values[0]);
         var height = int.Parse(values[1]);

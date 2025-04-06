@@ -6,10 +6,8 @@ ALTER TABLE VideoTags
 
 CREATE TABLE Videos
 (
-    VideoId             TEXT
-        CONSTRAINT PK_Videos PRIMARY KEY,
-    FullPath            TEXT    NOT NULL
-        CONSTRAINT UQ_Videos_FullPath UNIQUE,
+    VideoId             TEXT,
+    FullPath            TEXT    NOT NULL,
     Width               INTEGER NOT NULL,
     Height              INTEGER NOT NULL,
     Framerate           REAL    NOT NULL,
@@ -17,13 +15,17 @@ CREATE TABLE Videos
     Bitrate             INTEGER NOT NULL,
     Size                INTEGER NOT NULL,
     LastModifiedTimeUtc TEXT    NOT NULL,
-    ThumbnailSeek       REAL    NOT NULL
+    ThumbnailSeek       REAL    NOT NULL,
+
+    CONSTRAINT PK_Videos PRIMARY KEY (VideoId),
+    CONSTRAINT UQ_Videos_FullPath UNIQUE (FullPath)
 );
 
 CREATE TABLE VideoTags
 (
     VideoId TEXT,
     TagId   TEXT,
+    
     CONSTRAINT PK_VideoTags PRIMARY KEY (VideoId, TagId),
     CONSTRAINT FK_Videos
         FOREIGN KEY (VideoId)
@@ -43,7 +45,7 @@ SELECT VideoId,
        0,
        0,
        0,
-       DurationInSeconds,
+       Duration,
        Size,
        LastModifiedTimeUtc,
        ThumbnailSeek
@@ -55,18 +57,21 @@ FROM VideoTagsOld;
 
 CREATE TABLE CustomThumbnails
 (
-    VideoId   TEXT
-        CONSTRAINT PK_CustomThumbnails PRIMARY KEY
-        CONSTRAINT FK_Videos FOREIGN KEY
-            REFERENCES Videos (VideoId),
-    Thumbnail BLOB NOT NULL
+    VideoId   TEXT,
+    Thumbnail BLOB NOT NULL,
+    
+    CONSTRAINT PK_CustomThumbnails PRIMARY KEY (VideoId),
+    CONSTRAINT FK_Videos
+        FOREIGN KEY (VideoId)
+            REFERENCES Videos (VideoId)
 );
 
 CREATE TABLE Meta
 (
-    Name  TEXT
-        CONSTRAINT PK_Meta PRIMARY KEY,
-    Value TEXT
+    Name  TEXT,
+    Value TEXT,
+
+    CONSTRAINT PK_Meta PRIMARY KEY (Name)
 );
 
 INSERT INTO Meta(Name, Value)

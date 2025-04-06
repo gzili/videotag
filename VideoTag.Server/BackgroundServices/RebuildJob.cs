@@ -31,7 +31,19 @@ public class RebuildJob(
 
     private void RunRebuild()
     {
-        Task.Run(RebuildLibrary);
+        Task.Run(RunRebuildWithExceptionLogging);
+    }
+
+    private async Task RunRebuildWithExceptionLogging()
+    {
+        try
+        {
+            await RebuildLibrary();
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Rebuild job failed.");
+        }
     }
 
     private async Task RebuildLibrary()
