@@ -20,18 +20,6 @@ CREATE TABLE Videos
     ThumbnailSeek       REAL    NOT NULL
 );
 
-UPDATE Videos
-SET FullPath = @fullPath,
-    Width = @width,
-    Height = @height,
-    Framerate = @framerate,
-    DurationInSeconds = @durationInSeconds,
-    Bitrate = @bitrate,
-    Size = @size,
-    LastModifiedTimeUtc = @lastModifiedTimeUtc,
-    ThumbnailSeek = @thumbnailSeek
-WHERE VideoId = @videoId;
-
 CREATE TABLE VideoTags
 (
     VideoId TEXT,
