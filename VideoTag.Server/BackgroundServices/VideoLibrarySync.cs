@@ -13,8 +13,9 @@ public class VideoLibrarySync(
     ILogger<VideoLibrarySync> logger,
     VideoLibrarySyncTrigger trigger,
     IOptions<SyncOptions> options,
+    ILibraryService libraryService,
     IVideoRepository videoRepository,
-    VideoService videoService,
+    IVideoService videoService,
     IHubContext<SyncHub> hubContext) : IHostedService
 {
     private readonly SyncOptions _syncOptions = options.Value;
@@ -54,14 +55,10 @@ public class VideoLibrarySync(
         {
             logger.LogInformation("Acquired lock.");
             await hubContext.Clients.All.SendAsync("syncStarted");
+            
+            logger.LogInformation("Scanning for missing files in {Count} directories", _syncOptions.Folders.Count);
 
-            var missingFiles = new List<string>();
-
-            foreach (var folder in _syncOptions.Folders)
-            {
-                logger.LogInformation("Scanning for video files in {Folder}.", folder);
-                await AddMissingFiles(missingFiles, folder);
-            }
+            var missingFiles = await libraryService.FindFilesMissingFromTheLibrary();
             
             logger.LogInformation("Found {Count} files missing from the library.", missingFiles.Count);
 
@@ -89,25 +86,27 @@ public class VideoLibrarySync(
                     continue;
                 }
 
-                var duration = await Ffprobe.GetVideoDurationInSecondsAsync(fullPath);
-                int thumbnailSeek;
+                var properties = await Ffprobe.GetVideoPropertiesAsync(fullPath);
+                
+                double thumbnailSeek;
                 if (_syncOptions.DefaultThumbnailSeek > 1)
                 {
-                    thumbnailSeek = Math.Min((int) _syncOptions.DefaultThumbnailSeek, duration);
+                    thumbnailSeek = Math.Min((double)_syncOptions.DefaultThumbnailSeek, properties.DurationInSeconds);
                 }
                 else
                 {
-                    thumbnailSeek = (int)(duration * _syncOptions.DefaultThumbnailSeek);
+                    thumbnailSeek = properties.DurationInSeconds * (double)_syncOptions.DefaultThumbnailSeek;
                 }
-
-                var resolution = await Ffprobe.GetVideoResolutionAsync(fullPath);
                 
                 var video = new Video
                 {
                     VideoId = Guid.NewGuid(),
                     FullPath = fullPath,
-                    Duration = duration,
-                    Resolution = resolution,
+                    Width = properties.Width,
+                    Height = properties.Height,
+                    Framerate = properties.Framerate,
+                    DurationInSeconds = properties.DurationInSeconds,
+                    Bitrate = properties.Bitrate,
                     Size = fileInfo.Length,
                     LastModifiedTimeUtc = fileInfo.LastWriteTimeUtc,
                     ThumbnailSeek = thumbnailSeek
@@ -147,31 +146,5 @@ public class VideoLibrarySync(
                 logger.LogError(e, "Could not release lock.");
             }
         }
-    }
-
-    private async Task AddMissingFiles(List<string> missingFiles, string directory)
-    {
-        var videoPaths = Directory
-            .EnumerateFiles(directory, "*", SearchOption.AllDirectories)
-            .Where(IsAllowedFileExtension);
-
-        if (_syncOptions.ExcludePattern != null)
-        {
-            videoPaths = videoPaths.Where(path => !path.Contains(_syncOptions.ExcludePattern));
-        }
-
-        foreach (var path in videoPaths)
-        {
-            if (!await videoRepository.ExistsByFullPath(path))
-            {
-                missingFiles.Add(path);
-            }
-        }
-    }
-
-    private bool IsAllowedFileExtension(string path)
-    {
-        var extension = Path.GetExtension(path)[1..];
-        return _syncOptions.AllowedFileExtensions.Any(allowedExtension => extension == allowedExtension);
     }
 }

@@ -1,25 +1,37 @@
-using System.Text.RegularExpressions;
-
 namespace VideoTag.Server.Helpers;
+
+public record VideoProperties(int Width, int Height, double Framerate, double DurationInSeconds, long Bitrate);
 
 public static class Ffprobe
 {
-    private static readonly Regex VideoResolutionRegex = new(@"^\d+x\d+");
-    
-    public static async Task<int> GetVideoDurationInSecondsAsync(string videoPath)
+    public static async Task<VideoProperties> GetVideoPropertiesAsync(string path)
     {
-        var arguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{videoPath}\"";
-        var result = await ProcessAsyncHelper.RunProcessAndReadStringAsync("ffprobe", arguments);
-        return (int)double.Parse(result);
+        var arguments = $"-v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,duration,bit_rate -of csv=p=0 \"{path}\"";
+        var output = await ProcessAsyncHelper.RunProcessAndReadStringAsync("ffprobe", arguments);
+
+        var newLineIndex = output.IndexOfAny(['\r', '\n']);
+        if (newLineIndex < 0)
+            throw new Exception("Expected new line character in output");
+        
+        var values = output[..newLineIndex].Split(',');
+        if (values.Length < 4)
+            throw new Exception($"Expected at least 4 values but got {values.Length}");
+        
+        var width = int.Parse(values[0]);
+        var height = int.Parse(values[1]);
+        var framerate = ParseFramerate(values[2]);
+        var durationInSeconds = double.Parse(values[3]);
+        var bitrate = long.Parse(values[4]);
+
+        return new VideoProperties(width, height, framerate, durationInSeconds, bitrate);
     }
 
-    public static async Task<string> GetVideoResolutionAsync(string videoPath)
+    private static double ParseFramerate(string input)
     {
-        var arguments = $"-v error -select_streams v:0 -show_entries stream=height,width -of csv=s=x:p=0 \"{videoPath}\"";
-        var output = await ProcessAsyncHelper.RunProcessAndReadStringAsync("ffprobe", arguments);
-        var match = VideoResolutionRegex.Match(output);
-        if (!match.Success)
-            throw new Exception("Invalid video resolution");
-        return match.Value;
+        var values = input.Split('/');
+        var first = int.Parse(values[0]);
+        var second = int.Parse(values[1]);
+        var exactFramerate = (double)first / second;
+        return double.Round(exactFramerate, 2);
     }
 }

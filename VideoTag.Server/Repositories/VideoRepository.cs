@@ -10,13 +10,16 @@ public interface IVideoRepository
     Task<IEnumerable<Video>> GetVideos();
     Task<IEnumerable<Video>> GetVideos(Guid[] tagIds);
     Task<IEnumerable<Video>> GetVideosByFileSizeAndDateModified(long size, DateTime lastModifiedTimeUtc);
+    Task<IEnumerable<Guid>> GetVideoIds();
     Task<Video> GetVideo(Guid videoId);
     Task<bool> ExistsByFullPath(string fullPath);
     Task AddTag(Guid videoId, Guid tagId);
     Task<IEnumerable<Tag>> GetTags(Guid videoId);
     Task RemoveTag(Guid videoId, Guid tagId);
     Task UpdateFullPath(Guid videoId, string fullPath);
-    Task UpdateThumbnailSeek(Guid videoId, int seek);
+    Task UpdateThumbnailSeek(Guid videoId, double seek);
+    Task SaveCustomThumbnail(Guid videoId, byte[] thumbnail);
+    Task UpdateVideo(Video video);
     Task DeleteVideo(Guid videoId);
 }
 
@@ -74,6 +77,13 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
         {
             return await connection.QueryAsync<Video>(sql, new { Size = size, LastModified = lastModifiedTimeUtc });
         }
+    }
+
+    public async Task<IEnumerable<Guid>> GetVideoIds()
+    {
+        const string sql = "SELECT VideoId FROM Videos";
+        using var connection = dapperContext.CreateConnection();
+        return await connection.QueryAsync<Guid>(sql);
     }
 
     public async Task<Video> GetVideo(Guid videoId)
@@ -145,13 +155,44 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
         }
     }
 
-    public async Task UpdateThumbnailSeek(Guid videoId, int seek)
+    public async Task UpdateThumbnailSeek(Guid videoId, double seek)
     {
         const string sql = "UPDATE Videos SET ThumbnailSeek = @Seek WHERE VideoId = @VideoId";
         using (var connection = dapperContext.CreateConnection())
         {
             await connection.ExecuteAsync(sql, new { VideoId = videoId, Seek = seek });
         }
+    }
+    
+    public async Task SaveCustomThumbnail(Guid videoId, byte[] thumbnail)
+    {
+        const string sql = """
+                           INSERT INTO CustomThumbnails(VideoId, Thumbnail)
+                           VALUES (@videoId, @thumbnail)
+                           ON CONFLICT(VideoId)
+                               DO UPDATE SET Thumbnail = @thumbnail
+                           """;
+        using var connection = dapperContext.CreateConnection();
+        await connection.ExecuteAsync(sql, new { videoId, thumbnail });
+    }
+
+    public async Task UpdateVideo(Video video)
+    {
+        const string sql = """
+                           UPDATE Videos
+                           SET FullPath = @fullPath,
+                               Width = @width,
+                               Height = @height,
+                               Framerate = @framerate,
+                               DurationInSeconds = @durationInSeconds,
+                               Bitrate = @bitrate,
+                               Size = @size,
+                               LastModifiedTimeUtc = @lastModifiedTimeUtc,
+                               ThumbnailSeek = @thumbnailSeek
+                           WHERE VideoId = @videoId;
+                           """;
+        using var connection = dapperContext.CreateConnection();
+        await connection.ExecuteAsync(sql, video);
     }
 
     public async Task DeleteVideo(Guid videoId)
