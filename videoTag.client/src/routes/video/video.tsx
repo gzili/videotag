@@ -206,7 +206,7 @@ function Thumbnail(props: ThumbnailProps) {
   
   const queryClient = useQueryClient();
   const videoQueryKey = useVideoQueryKey();
-  const { mutate, isPending: isMutating } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: api.updateVideoThumbnailSeek,
     onSuccess: data => {
       queryClient.setQueryData(videoQueryKey, data);
@@ -238,7 +238,8 @@ function Thumbnail(props: ThumbnailProps) {
         <Button
           variant="contained"
           disableElevation
-          disabled={seek === video.thumbnailSeek || isMutating}
+          disabled={seek === video.thumbnailSeek}
+          loading={isPending}
           onClick={() => mutate({ videoId: video.videoId, seek })}
         >
           Update thumbnail

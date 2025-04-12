@@ -113,9 +113,7 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
         var video = await videoRepository.GetVideo(videoId);
         
         await videoRepository.DeleteVideo(video.VideoId);
-        
-        File.Delete(GetThumbnailPath(video.VideoId, LargeSuffix));
-        File.Delete(GetThumbnailPath(video.VideoId, SmallSuffix));
+        DeleteThumbnails(videoId);
 
         if (!keepFileOnDisk)
         {
@@ -139,4 +137,10 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
 
     private string GetThumbnailPath(Guid videoId, string suffix) =>
         Path.Combine(environmentService.ThumbnailsDirectoryPath, $"{videoId:N}_{suffix}.jpg");
+
+    private void DeleteThumbnails(Guid videoId)
+    {
+        File.Delete(GetThumbnailPath(videoId, LargeSuffix));
+        File.Delete(GetThumbnailPath(videoId, SmallSuffix));
+    }
 }
