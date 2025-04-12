@@ -30,6 +30,8 @@ export function Video() {
           <Bullet />
           <Typography>{formatDuration(video.durationInSeconds)}</Typography>
           <Bullet />
+          <Typography>{video.framerate} FPS</Typography>
+          <Bullet />
           <Typography>{formatSize(video.size)}</Typography>
           <Bullet />
           <Typography>{formatIsoDate(video.lastModifiedTimeUtc)}</Typography>
