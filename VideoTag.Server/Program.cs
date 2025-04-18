@@ -7,7 +7,9 @@ using Microsoft.Extensions.Options;
 using VideoTag.Server.BackgroundServices;
 using VideoTag.Server.Configuration;
 using VideoTag.Server.Contexts;
+using VideoTag.Server.Extensions;
 using VideoTag.Server.Hubs;
+using VideoTag.Server.OneTimeCommands;
 using VideoTag.Server.Repositories;
 using VideoTag.Server.Services;
 using VideoTag.Server.SqlTypeHandlers;
@@ -46,6 +48,8 @@ builder.Services.AddSingleton<ILibraryService, LibraryService>();
 builder.Services.AddHostedService<RebuildJob>();
 builder.Services.AddHostedService<VideoLibrarySync>();
 
+builder.Services.AddSingleton<UpdateMigrationVersionCommand>();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policyBuilder =>
@@ -63,6 +67,8 @@ builder.Services.AddControllers()
     });
 
 var app = builder.Build();
+
+app.EnsureMigrationVersionUpdated();
 
 using (var scope = app.Services.CreateScope())
 {
