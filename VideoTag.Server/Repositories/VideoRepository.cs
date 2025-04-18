@@ -17,7 +17,6 @@ public interface IVideoRepository
     Task<IEnumerable<Tag>> GetTags(Guid videoId);
     Task RemoveTag(Guid videoId, Guid tagId);
     Task UpdateFullPath(Guid videoId, string fullPath);
-    Task UpdateThumbnailSeek(Guid videoId, double seek);
     Task SaveCustomThumbnail(Guid videoId, byte[] thumbnail);
     Task UpdateVideo(Video video);
     Task DeleteVideo(Guid videoId);
@@ -28,8 +27,8 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
     public async Task InsertVideo(Video video)
     {
         const string sql = """
-                             INSERT INTO Videos(VideoId, FullPath, Width, Height, Framerate, DurationInSeconds, Bitrate, Size, LastModifiedTimeUtc, ThumbnailSeek)
-                             VALUES (@VideoId, @FullPath, @Width, @Height, @Framerate, @DurationInSeconds, @Bitrate, @Size, @LastModifiedTimeUtc, @ThumbnailSeek)
+                             INSERT INTO Videos(VideoId, FullPath, Width, Height, Framerate, DurationInSeconds, Bitrate, Size, LastModifiedTimeUtc, ThumbnailSeek, ThumbnailCacheKey)
+                             VALUES (@VideoId, @FullPath, @Width, @Height, @Framerate, @DurationInSeconds, @Bitrate, @Size, @LastModifiedTimeUtc, @ThumbnailSeek, @ThumbnailCacheKey)
                              """;
         using var connection = dapperContext.CreateConnection();
         await connection.ExecuteAsync(sql, video);
@@ -38,7 +37,7 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
     public async Task<IEnumerable<Video>> GetVideos()
     {
         const string sql = """
-                             SELECT V.VideoId, V.FullPath, V.Width, V.Height, V.Framerate, V.DurationInSeconds, V.Bitrate, V.Size, V.LastModifiedTimeUtc, V.ThumbnailSeek
+                             SELECT V.VideoId, V.FullPath, V.Width, V.Height, V.Framerate, V.DurationInSeconds, V.Bitrate, V.Size, V.LastModifiedTimeUtc, V.ThumbnailSeek, V.ThumbnailCacheKey
                              FROM Videos V
                                  LEFT JOIN VideoTags VT on V.VideoId = VT.VideoId
                              WHERE VT.VideoId IS NULL
@@ -50,10 +49,10 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
     public async Task<IEnumerable<Video>> GetVideos(Guid[] tagIds)
     {
         const string sql = """
-                           SELECT V.VideoId, V.FullPath, V.Width, V.Height, V.Framerate, V.DurationInSeconds, V.Bitrate, V.Size, V.LastModifiedTimeUtc, V.ThumbnailSeek
+                           SELECT V.VideoId, V.FullPath, V.Width, V.Height, V.Framerate, V.DurationInSeconds, V.Bitrate, V.Size, V.LastModifiedTimeUtc, V.ThumbnailSeek, V.ThumbnailCacheKey
                            FROM Videos V
                                JOIN VideoTags VT ON V.VideoId = VT.VideoId AND VT.TagId IN @tagIds
-                           GROUP BY V.VideoId, V.FullPath, V.Width, V.Height, V.Framerate, V.DurationInSeconds, V.Bitrate, V.Size, V.LastModifiedTimeUtc, V.ThumbnailSeek
+                           GROUP BY V.VideoId, V.FullPath, V.Width, V.Height, V.Framerate, V.DurationInSeconds, V.Bitrate, V.Size, V.LastModifiedTimeUtc, V.ThumbnailSeek, V.ThumbnailCacheKey
                            HAVING COUNT(V.VideoId) = @Count
                            """;
         using var connection = dapperContext.CreateConnection();
@@ -63,7 +62,7 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
     public async Task<IEnumerable<Video>> GetVideosByFileSizeAndDateModified(long size, DateTime lastModifiedTimeUtc)
     {
         const string sql = """
-                           SELECT VideoId, FullPath, Width, Height, Framerate, DurationInSeconds, Bitrate, Size, LastModifiedTimeUtc, ThumbnailSeek
+                           SELECT VideoId, FullPath, Width, Height, Framerate, DurationInSeconds, Bitrate, Size, LastModifiedTimeUtc, ThumbnailSeek, ThumbnailCacheKey
                            FROM Videos
                            WHERE Size = @size AND LastModifiedTimeUtc = @lastModifiedTimeUtc
                            """;
@@ -81,7 +80,7 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
     public async Task<Video> GetVideo(Guid videoId)
     {
         const string sql = """
-                             SELECT VideoId, FullPath, Width, Height, Framerate, DurationInSeconds, Bitrate, Size, LastModifiedTimeUtc, ThumbnailSeek
+                             SELECT VideoId, FullPath, Width, Height, Framerate, DurationInSeconds, Bitrate, Size, LastModifiedTimeUtc, ThumbnailSeek, ThumbnailCacheKey
                              FROM Videos
                              WHERE VideoId = @videoId
                              """;
@@ -134,13 +133,6 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
         using var connection = dapperContext.CreateConnection();
         await connection.ExecuteAsync(sql, new { videoId, fullPath });
     }
-
-    public async Task UpdateThumbnailSeek(Guid videoId, double seek)
-    {
-        const string sql = "UPDATE Videos SET ThumbnailSeek = @seek WHERE VideoId = @videoId";
-        using var connection = dapperContext.CreateConnection();
-        await connection.ExecuteAsync(sql, new { videoId, seek });
-    }
     
     public async Task SaveCustomThumbnail(Guid videoId, byte[] thumbnail)
     {
@@ -166,7 +158,8 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
                                Bitrate = @Bitrate,
                                Size = @Size,
                                LastModifiedTimeUtc = @LastModifiedTimeUtc,
-                               ThumbnailSeek = @ThumbnailSeek
+                               ThumbnailSeek = @ThumbnailSeek,
+                               ThumbnailCacheKey = @ThumbnailCacheKey
                            WHERE VideoId = @VideoId;
                            """;
         using var connection = dapperContext.CreateConnection();

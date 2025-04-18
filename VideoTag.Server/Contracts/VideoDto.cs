@@ -39,7 +39,7 @@ public class VideoDto
             DurationInSeconds = video.DurationInSeconds,
             Size = video.Size,
             LastModifiedTimeUtc = video.LastModifiedTimeUtc,
-            ThumbnailUrl = $"/images/{video.VideoId:N}_large.jpg",
+            ThumbnailUrl = $"/images/{video.VideoId:N}_large.jpg?k={video.ThumbnailCacheKey}",
             ThumbnailSeek = video.ThumbnailSeek
         };
     }

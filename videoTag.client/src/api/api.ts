@@ -74,4 +74,10 @@ export const api = {
   updateVideoThumbnailSeek({ videoId, seek }: { videoId: string, seek: number }) {
     return http.put(`videos/${videoId}/thumbnail?seek=${seek}`).json<VideoDto>();
   },
+  uploadCustomThumbnail(videoId: string, file: File) {
+    const formData = new FormData();
+    formData.set('file', file);
+
+    return http.post(`videos/${videoId}/custom-thumbnail`, { body: formData }).json<VideoDto>();
+  }
 };

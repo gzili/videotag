@@ -9,5 +9,5 @@ export interface VideoDto {
   size: number;
   lastModifiedTimeUtc: string;
   thumbnailUrl: string;
-  thumbnailSeek: number;
+  thumbnailSeek: number | null;
 }

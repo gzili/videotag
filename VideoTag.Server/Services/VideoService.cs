@@ -15,7 +15,7 @@ public interface IVideoService
     Task<byte[]> GetVideoThumbnailAtSeek(Guid videoId, double seekInSeconds);
     Task<Video> UpdateThumbnailSeek(Guid videoId, double seek);
     Task SaveThumbnails(Video video);
-    Task SaveCustomThumbnail(Guid videoId, byte[] thumbnail);
+    Task<Video> SaveCustomThumbnail(Guid videoId, byte[] thumbnail);
     Task AddTag(Guid videoId, Guid tagId);
     Task<IEnumerable<Tag>> GetTags(Guid videoId);
     Task RemoveTag(Guid videoId, Guid tagId);
@@ -31,6 +31,7 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
     
     public async Task CreateVideo(Video video)
     {
+        video.ThumbnailCacheKey = CreateThumbnailCacheKey();
         await SaveThumbnails(video);
         await videoRepository.InsertVideo(video);
     }
@@ -74,14 +75,20 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
     {
         var video = await videoRepository.GetVideo(videoId);
         video.ThumbnailSeek = seek;
+        video.ThumbnailCacheKey = CreateThumbnailCacheKey();
+        
         await SaveThumbnails(video);
-        await videoRepository.UpdateThumbnailSeek(video.VideoId, seek);
+        await videoRepository.UpdateVideo(video);
+        
         return video;
     }
 
-    public async Task SaveCustomThumbnail(Guid videoId, byte[] thumbnail)
+    public async Task<Video> SaveCustomThumbnail(Guid videoId, byte[] thumbnail)
     {
-        await videoRepository.SaveCustomThumbnail(videoId, thumbnail);
+        var video = await videoRepository.GetVideo(videoId);
+        video.ThumbnailCacheKey = CreateThumbnailCacheKey();
+        
+        await videoRepository.SaveCustomThumbnail(video.VideoId, thumbnail);
         
         var largeThumbnailPath = GetThumbnailPath(videoId, LargeSuffix);
         await File.WriteAllBytesAsync(largeThumbnailPath, thumbnail);
@@ -91,6 +98,10 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
             GetThumbnailPath(videoId, SmallSuffix),
             ThumbnailWidth,
             ThumbnailHeight);
+        
+        await videoRepository.UpdateVideo(video);
+        
+        return video;
     }
 
     public async Task AddTag(Guid videoId, Guid tagId)
@@ -143,4 +154,6 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
         File.Delete(GetThumbnailPath(videoId, LargeSuffix));
         File.Delete(GetThumbnailPath(videoId, SmallSuffix));
     }
+
+    private static long CreateThumbnailCacheKey() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 }

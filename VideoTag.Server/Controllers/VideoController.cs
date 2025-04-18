@@ -100,12 +100,21 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
     }
 
     [HttpPost("{videoId:guid}/custom-thumbnail")]
-    public async Task<IActionResult> UploadThumbnail(Guid videoId, UploadCustomThumbnailDto dto)
+    public async Task<ActionResult<VideoDto>> UploadThumbnail(Guid videoId, UploadCustomThumbnailDto dto)
     {
-        var stream = new MemoryStream((int)dto.File.Length);
-        await dto.File.CopyToAsync(stream);
-        await videoService.SaveCustomThumbnail(videoId, stream.ToArray());
-        return Ok();
+        try
+        {
+            var stream = new MemoryStream((int)dto.File.Length);
+            await dto.File.CopyToAsync(stream);
+            
+            var video = await videoService.SaveCustomThumbnail(videoId, stream.ToArray());
+            
+            return Ok(VideoDto.FromVideo(video));
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpPost("{videoId:guid}/tags/{tagId:guid}")]

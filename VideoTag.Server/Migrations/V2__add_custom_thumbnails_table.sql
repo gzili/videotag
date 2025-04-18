@@ -16,6 +16,7 @@ CREATE TABLE Videos
     Size                INTEGER NOT NULL,
     LastModifiedTimeUtc TEXT    NOT NULL,
     ThumbnailSeek       REAL    NOT NULL,
+    ThumbnailCacheKey   INTEGER NOT NULL,
 
     CONSTRAINT PK_Videos PRIMARY KEY (VideoId),
     CONSTRAINT UQ_Videos_FullPath UNIQUE (FullPath)
@@ -38,7 +39,7 @@ CREATE TABLE VideoTags
 );
 
 INSERT INTO Videos(VideoId, FullPath, Width, Height, Framerate, Bitrate, DurationInSeconds, Size, LastModifiedTimeUtc,
-                   ThumbnailSeek)
+                   ThumbnailSeek, ThumbnailCacheKey)
 SELECT VideoId,
        FullPath,
        0,
@@ -48,7 +49,8 @@ SELECT VideoId,
        Duration,
        Size,
        LastModifiedTimeUtc,
-       ThumbnailSeek
+       ThumbnailSeek,
+       0
 FROM VideosOld;
 
 INSERT INTO VideoTags
