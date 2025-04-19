@@ -75,7 +75,7 @@ public class RebuildJob(
             if (!Path.Exists(video.FullPath))
             {
                 logger.LogInformation("File {Path} no longer exists. Deleting library entry.", video.FullPath);
-                await videoService.DeleteVideo(video.VideoId, true);
+                await videoRepository.DeleteVideo(video.VideoId);
                 continue;
             }
 
@@ -87,9 +87,8 @@ public class RebuildJob(
             video.DurationInSeconds = properties.DurationInSeconds;
             video.Bitrate = properties.Bitrate;
 
+            await videoService.CreateThumbnailsOnDisk(video);
             await videoRepository.UpdateVideo(video);
-
-            await videoService.SaveThumbnails(video);
         }
 
         await metaRepository.ClearRebuildNeeded();

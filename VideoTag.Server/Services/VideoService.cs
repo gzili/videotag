@@ -15,15 +15,18 @@ public interface IVideoService
     Task ShowInExplorer(Guid videoId);
     Task<byte[]> GetVideoThumbnailAtSeek(Guid videoId, double seekInSeconds);
     Task<Video> UpdateThumbnailSeek(Guid videoId, double seek);
-    Task SaveThumbnails(Video video);
     Task<Video> SaveCustomThumbnail(Guid videoId, byte[] thumbnail);
+    Task CreateThumbnailsOnDisk(Video video);
     Task AddTag(Guid videoId, Guid tagId);
     Task<IEnumerable<Tag>> GetTags(Guid videoId);
     Task RemoveTag(Guid videoId, Guid tagId);
     Task DeleteVideo(Guid videoId, bool keepFileOnDisk);
 }
 
-public class VideoService(IEnvironmentService environmentService, IVideoRepository videoRepository) : IVideoService
+public class VideoService(
+    IEnvironmentService environmentService,
+    IVideoRepository videoRepository,
+    ICustomThumbnailsRepository customThumbnailsRepository) : IVideoService
 {
     private const string SmallSuffix = "small";
     private const string LargeSuffix = "large";
@@ -32,7 +35,6 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
     
     public async Task CreateVideo(Video video)
     {
-        video.ThumbnailTimestamp = GetCurrentTimestamp();
         await SaveThumbnails(video);
         await videoRepository.InsertVideo(video);
     }
@@ -89,7 +91,6 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
     {
         var video = await videoRepository.GetVideo(videoId);
         video.ThumbnailSeek = seek;
-        video.ThumbnailTimestamp = GetCurrentTimestamp();
         
         await SaveThumbnails(video);
         await videoRepository.UpdateVideo(video);
@@ -102,20 +103,25 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
         var video = await videoRepository.GetVideo(videoId);
         video.ThumbnailTimestamp = GetCurrentTimestamp();
         
-        await videoRepository.SaveCustomThumbnail(video.VideoId, thumbnail);
-        
-        var largeThumbnailPath = GetThumbnailPath(videoId, LargeSuffix);
-        await File.WriteAllBytesAsync(largeThumbnailPath, thumbnail);
-        
-        await Ffmpeg.ResizeImageOnDisk(
-            largeThumbnailPath,
-            GetThumbnailPath(videoId, SmallSuffix),
-            ThumbnailWidth,
-            ThumbnailHeight);
-        
+        await customThumbnailsRepository.SaveForVideo(videoId, thumbnail);
+        await WriteCustomThumbnail(videoId, thumbnail);
         await videoRepository.UpdateVideo(video);
         
         return video;
+    }
+
+    public async Task CreateThumbnailsOnDisk(Video video)
+    {
+        var customThumbnail = await customThumbnailsRepository.GetForVideo(video.VideoId);
+        
+        if (customThumbnail != null)
+        {
+            await WriteCustomThumbnail(video.VideoId, customThumbnail);
+        }
+        else
+        {
+            await SaveThumbnails(video);
+        }
     }
 
     public async Task AddTag(Guid videoId, Guid tagId)
@@ -146,7 +152,10 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
         }
     }
     
-    public async Task SaveThumbnails(Video video)
+    private string GetThumbnailPath(Guid videoId, string suffix) =>
+        Path.Combine(environmentService.ThumbnailsDirectoryPath, $"{videoId:N}_{suffix}.jpg");
+    
+    private async Task SaveThumbnails(Video video)
     {
         await Ffmpeg.ExtractStillOnDisk(
             video.FullPath,
@@ -158,10 +167,21 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
             video.ThumbnailSeek,
             ThumbnailWidth,
             ThumbnailHeight);
+        
+        video.ThumbnailTimestamp = GetCurrentTimestamp();
     }
-
-    private string GetThumbnailPath(Guid videoId, string suffix) =>
-        Path.Combine(environmentService.ThumbnailsDirectoryPath, $"{videoId:N}_{suffix}.jpg");
+    
+    private async Task WriteCustomThumbnail(Guid videoId, byte[] thumbnail)
+    {
+        var largeThumbnailPath = GetThumbnailPath(videoId, LargeSuffix);
+        await File.WriteAllBytesAsync(largeThumbnailPath, thumbnail);
+        
+        await Ffmpeg.ResizeImageOnDisk(
+            largeThumbnailPath,
+            GetThumbnailPath(videoId, SmallSuffix),
+            ThumbnailWidth,
+            ThumbnailHeight);
+    }
 
     private void DeleteThumbnails(Guid videoId)
     {

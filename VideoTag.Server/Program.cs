@@ -44,6 +44,7 @@ builder.Services.AddSingleton<ICategoryService, CategoryService>();
 builder.Services.AddSingleton<ITagRepository, TagRepository>();
 builder.Services.AddSingleton<ITagService, TagService>();
 builder.Services.AddSingleton<ILibraryService, LibraryService>();
+builder.Services.AddSingleton<ICustomThumbnailsRepository, CustomThumbnailsRepository>();
 
 builder.Services.AddHostedService<RebuildJob>();
 builder.Services.AddHostedService<VideoLibrarySync>();

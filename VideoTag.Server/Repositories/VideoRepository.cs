@@ -17,7 +17,6 @@ public interface IVideoRepository
     Task<IEnumerable<Tag>> GetTags(Guid videoId);
     Task RemoveTag(Guid videoId, Guid tagId);
     Task UpdateFullPath(Guid videoId, string fullPath);
-    Task SaveCustomThumbnail(Guid videoId, byte[] thumbnail);
     Task UpdateVideo(Video video);
     Task DeleteVideo(Guid videoId);
 }
@@ -132,18 +131,6 @@ public class VideoRepository(DapperContext dapperContext) : IVideoRepository
         const string sql = "UPDATE Videos SET FullPath = @fullPath WHERE VideoId = @videoId";
         using var connection = dapperContext.CreateConnection();
         await connection.ExecuteAsync(sql, new { videoId, fullPath });
-    }
-    
-    public async Task SaveCustomThumbnail(Guid videoId, byte[] thumbnail)
-    {
-        const string sql = """
-                           INSERT INTO CustomThumbnails(VideoId, Thumbnail)
-                           VALUES (@videoId, @thumbnail)
-                           ON CONFLICT(VideoId)
-                               DO UPDATE SET Thumbnail = @thumbnail
-                           """;
-        using var connection = dapperContext.CreateConnection();
-        await connection.ExecuteAsync(sql, new { videoId, thumbnail });
     }
 
     public async Task UpdateVideo(Video video)
