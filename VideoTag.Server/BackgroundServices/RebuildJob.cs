@@ -70,12 +70,13 @@ public class RebuildJob(
             var videoId = videoIds[i];
             var video = await videoService.GetVideo(videoId);
             
-            logger.LogInformation("Processing video {Index}/{Count}. Path: {Path}.", i, videoIds.Count, video.FullPath);
+            logger.LogInformation("Processing video {Index}/{Count}. Path: {Path}.", i + 1, videoIds.Count, video.FullPath);
             
             if (!Path.Exists(video.FullPath))
             {
                 logger.LogInformation("File {Path} no longer exists. Deleting library entry.", video.FullPath);
                 await videoService.DeleteVideo(video.VideoId, true);
+                continue;
             }
 
             var properties = await Ffprobe.GetVideoPropertiesAsync(video.FullPath);
@@ -104,7 +105,7 @@ public class RebuildJob(
         {
             var fileInfo = new FileInfo(path);
             fileInfo.Refresh();
-                
+
             var matchingVideos = (await videoRepository.GetVideosByFileSizeAndDateModified(fileInfo.Length, fileInfo.LastWriteTimeUtc)).ToList();
 
             if (matchingVideos.Count != 1) continue;
