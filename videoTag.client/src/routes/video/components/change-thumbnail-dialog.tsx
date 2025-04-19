@@ -241,10 +241,12 @@ function UploadFileTabContent() {
   const videoId = useVideoId();
   const queryClient = useQueryClient();
   const videoQueryKey = useVideoQueryKey();
+  const { onClose } = useDialogContext();
   const { mutate, isPending } = useMutation({
     mutationFn: (file: File) => api.uploadCustomThumbnail(videoId, file),
     onSuccess: (data) => {
       queryClient.setQueryData(videoQueryKey, data);
+      onClose();
     },
   });
 
