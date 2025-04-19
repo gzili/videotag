@@ -86,7 +86,7 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
     }
 
     [HttpGet("{videoId:guid}/thumbnail")]
-    public async Task<IActionResult> GetThumbnail(Guid videoId, int seek)
+    public async Task<IActionResult> GetThumbnail(Guid videoId, double seek)
     {
         try
         {
@@ -100,7 +100,7 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
     }
 
     [HttpPut("{videoId:guid}/thumbnail")]
-    public async Task<ActionResult<VideoDto>> UpdateThumbnailSeek(Guid videoId, int seek)
+    public async Task<ActionResult<VideoDto>> UpdateThumbnailSeek(Guid videoId, double seek)
     {
         try
         {

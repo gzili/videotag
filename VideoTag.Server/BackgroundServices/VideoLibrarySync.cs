@@ -109,7 +109,7 @@ public class VideoLibrarySync(
                     Bitrate = properties.Bitrate,
                     Size = fileInfo.Length,
                     LastModifiedTimeUtc = fileInfo.LastWriteTimeUtc,
-                    ThumbnailSeek = thumbnailSeek
+                    ThumbnailSeek = double.Floor(thumbnailSeek)
                 };
 
                 await videoService.CreateVideo(video);
