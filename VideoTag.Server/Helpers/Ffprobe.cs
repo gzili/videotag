@@ -1,25 +1,62 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace VideoTag.Server.Helpers;
 
 public record VideoProperties(int Width, int Height, double Framerate, double DurationInSeconds, long Bitrate);
+
+public class FfprobeDto
+{
+    public class StreamDto
+    {
+        [JsonPropertyName("width")]
+        public required int Width { get; set; }
+        
+        [JsonPropertyName("height")]
+        public required int Height { get; set; }
+        
+        [JsonPropertyName("r_frame_rate")]
+        public required string RFrameRate { get; set; }
+    }
+    
+    public class FormatDto
+    {
+        [JsonPropertyName("duration")]
+        public required string Duration { get; set; }
+        
+        [JsonPropertyName("bit_rate")]
+        public required string BitRate { get; set; }
+    }
+    
+    [JsonPropertyName("format")]
+    public required FormatDto Format { get; set; }
+    
+    [JsonPropertyName("streams")]
+    public required List<StreamDto> Streams { get; set; }
+}
 
 public static class Ffprobe
 {
     public static async Task<VideoProperties> GetVideoPropertiesAsync(string path)
     {
-        var arguments = $"-v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,duration,bit_rate -of csv=p=0 \"{path}\"";
+        var arguments = $"-v error -show_entries format=duration,bit_rate -select_streams v:0 -show_entries stream=width,height,r_frame_rate -of json \"{path}\"";
         var output = await ProcessAsyncHelper.RunProcessAndReadStringAsync("ffprobe", arguments);
-        
-        var values = output.Split(',', 5 + 1);
-        if (values.Length < 5)
-            throw new Exception($"Expected at least 5 values but got {values.Length}");
-        
-        var width = int.Parse(values[0]);
-        var height = int.Parse(values[1]);
-        var framerate = ParseFramerate(values[2]);
-        var durationInSeconds = double.Parse(values[3]);
-        var bitrate = long.Parse(values[4]);
 
-        return new VideoProperties(width, height, framerate, durationInSeconds, bitrate);
+        var dto = JsonSerializer.Deserialize<FfprobeDto>(output);
+
+        if (dto == null)
+            throw new Exception("Deserialized JSON is null");
+
+        var format = dto.Format;
+        var stream = dto.Streams.First();
+
+        return new VideoProperties(
+            stream.Width,
+            stream.Height,
+            ParseFramerate(stream.RFrameRate),
+            double.Parse(format.Duration),
+            int.Parse(format.BitRate)
+        );
     }
 
     private static double ParseFramerate(string input)
