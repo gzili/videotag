@@ -94,6 +94,7 @@ public class VideoService(
         
         await SaveThumbnails(video);
         await videoRepository.UpdateVideo(video);
+        await customThumbnailsRepository.DeleteForVideo(videoId);
         
         return video;
     }
