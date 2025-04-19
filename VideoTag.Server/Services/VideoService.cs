@@ -32,7 +32,7 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
     
     public async Task CreateVideo(Video video)
     {
-        video.ThumbnailCacheKey = CreateThumbnailCacheKey();
+        video.ThumbnailTimestamp = GetCurrentTimestamp();
         await SaveThumbnails(video);
         await videoRepository.InsertVideo(video);
     }
@@ -89,7 +89,7 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
     {
         var video = await videoRepository.GetVideo(videoId);
         video.ThumbnailSeek = seek;
-        video.ThumbnailCacheKey = CreateThumbnailCacheKey();
+        video.ThumbnailTimestamp = GetCurrentTimestamp();
         
         await SaveThumbnails(video);
         await videoRepository.UpdateVideo(video);
@@ -100,7 +100,7 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
     public async Task<Video> SaveCustomThumbnail(Guid videoId, byte[] thumbnail)
     {
         var video = await videoRepository.GetVideo(videoId);
-        video.ThumbnailCacheKey = CreateThumbnailCacheKey();
+        video.ThumbnailTimestamp = GetCurrentTimestamp();
         
         await videoRepository.SaveCustomThumbnail(video.VideoId, thumbnail);
         
@@ -169,5 +169,5 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
         File.Delete(GetThumbnailPath(videoId, SmallSuffix));
     }
 
-    private static long CreateThumbnailCacheKey() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    private static long GetCurrentTimestamp() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 }

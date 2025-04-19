@@ -22,5 +22,5 @@ public class Video
     // Thumbnail seek in seconds from the start of the video
     public double ThumbnailSeek { get; set; }
     
-    public long ThumbnailCacheKey { get; set; }
+    public long ThumbnailTimestamp { get; set; }
 }

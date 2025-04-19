@@ -31,7 +31,7 @@ public class VideoListItemDto
             DurationInSeconds = video.DurationInSeconds,
             Size = video.Size,
             LastModifiedUnixSeconds = ((DateTimeOffset)video.LastModifiedTimeUtc).ToUnixTimeSeconds(),
-            ThumbnailUrl = $"/images/{video.VideoId:N}_small.jpg?k={video.ThumbnailCacheKey}"
+            ThumbnailUrl = $"/images/{video.VideoId:N}_small.jpg?t={video.ThumbnailTimestamp}"
         };
     }
 }
