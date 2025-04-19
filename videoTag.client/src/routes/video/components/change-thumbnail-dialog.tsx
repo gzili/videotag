@@ -122,14 +122,16 @@ function ChooseFromVideoTabContent(props: ChooseFromVideoTabContentProps) {
       return;
     }
 
-    const handleImageLoad = () => {
+    const listener = () => {
       setIsLoading(false);
     };
 
-    imageEl.addEventListener('load', handleImageLoad);
+    imageEl.addEventListener('load', listener);
+    imageEl.addEventListener('error', listener);
 
     return () => {
-      imageEl.removeEventListener('load', handleImageLoad);
+      imageEl.removeEventListener('load', listener);
+      imageEl.removeEventListener('error', listener);
     }
   }, []);
   
