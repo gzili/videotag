@@ -57,7 +57,10 @@ export const api = {
     return http.get(`videos/${videoId}`).json<VideoDto>();
   },
   playVideo(videoId: string) {
-    http.post(`videos/${videoId}/play`);
+    return http.post(`videos/${videoId}/play`);
+  },
+  showInExplorer(videoId: string) {
+    return http.post(`videos/${videoId}/show-in-explorer`);
   },
   deleteVideo(videoId: string, keepFileOnDisk: boolean) {
     return http.delete(`videos/${videoId}?keepFileOnDisk=${keepFileOnDisk}`);

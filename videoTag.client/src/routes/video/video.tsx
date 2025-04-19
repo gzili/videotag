@@ -1,4 +1,5 @@
 import DeleteIcon from '@mui/icons-material/Delete';
+import FolderIcon from '@mui/icons-material/Folder';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Autocomplete, Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +17,14 @@ export function Video() {
   const { video } = useVideo();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const navigate = useNavigate();
+
+  const { mutate: playVideo } = useMutation({
+    mutationFn: (videoId: string) => api.playVideo(videoId),
+  });
+
+  const { mutate: showInExplorer } = useMutation({
+    mutationFn: (videoId: string) => api.showInExplorer(videoId),
+  });
   
   if (!video) {
     return null;
@@ -41,12 +50,20 @@ export function Video() {
         </Box>
         <Stack direction="row" spacing={1} pt="0.8rem" pb="0.6rem">
           <Button
-            onClick={() => api.playVideo(video.videoId)}
+            onClick={() => playVideo(video.videoId)}
             variant="contained"
             disableElevation
             startIcon={<PlayArrowIcon />}
           >
             Play
+          </Button>
+          <Button
+            onClick={() => showInExplorer(video.videoId)}
+            variant="contained"
+            disableElevation
+            startIcon={<FolderIcon />}
+          >
+            Show in explorer
           </Button>
           <Button
             onClick={() => setIsDeleteDialogOpen(true)}

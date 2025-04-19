@@ -12,6 +12,7 @@ public interface IVideoService
     Task<IEnumerable<Video>> GetVideosContainingAllTags(Guid[] tagIds);
     Task<Video> GetVideo(Guid videoId);
     Task PlayVideo(Guid videoId);
+    Task ShowInExplorer(Guid videoId);
     Task<byte[]> GetVideoThumbnailAtSeek(Guid videoId, double seekInSeconds);
     Task<Video> UpdateThumbnailSeek(Guid videoId, double seek);
     Task SaveThumbnails(Video video);
@@ -61,6 +62,19 @@ public class VideoService(IEnvironmentService environmentService, IVideoReposito
         }
         
         Process.Start("explorer", $"\"{video.FullPath}\"").Dispose();
+    }
+
+    public async Task ShowInExplorer(Guid videoId)
+    {
+        var video = await videoRepository.GetVideo(videoId);
+        
+        var processStartInfo = new ProcessStartInfo
+        {
+            FileName = "explorer",
+            Arguments = $"/select, \"{video.FullPath}\""
+        };
+
+        Process.Start(processStartInfo)?.Dispose();
     }
 
     public async Task<byte[]> GetVideoThumbnailAtSeek(Guid videoId, double seekInSeconds)

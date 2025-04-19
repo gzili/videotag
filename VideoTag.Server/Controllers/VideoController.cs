@@ -56,6 +56,20 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
             return NotFound();
         }
     }
+
+    [HttpPost("{videoId:guid}/show-in-explorer")]
+    public async Task<IActionResult> ShowInExplorer(Guid videoId)
+    {
+        try
+        {
+            await videoService.ShowInExplorer(videoId);
+            return Ok();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+    }
     
     [HttpDelete("{videoId:guid}")]
     public async Task<IActionResult> DeleteVideo(Guid videoId, bool keepFileOnDisk)
