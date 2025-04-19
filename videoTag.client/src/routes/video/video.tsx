@@ -1,67 +1,89 @@
 import DeleteIcon from '@mui/icons-material/Delete';
+import FolderIcon from '@mui/icons-material/Folder';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import { Autocomplete, Box, Button, Chip, Slider, Stack, TextField, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { api } from "api";
 import { TagDto, VideoDto } from "api/types";
 import { API_HOST } from "env.ts";
 import { formatDuration } from "utils.ts";
-import { useTags, useVideo, useVideoId, useVideoQueryKey, useVideoTags } from "./hooks.ts";
+import { useTags, useVideo, useVideoId, useVideoTags } from "./hooks.ts";
 import { DeleteVideoDialog } from 'components/delete-video-dialog.tsx';
 import { useNavigate } from 'react-router-dom';
+import { ChangeThumbnailDialog } from './components/change-thumbnail-dialog.tsx';
 
 export function Video() {
   const { video } = useVideo();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const navigate = useNavigate();
+
+  const { mutate: playVideo } = useMutation({
+    mutationFn: (videoId: string) => api.playVideo(videoId),
+  });
+
+  const { mutate: showInExplorer } = useMutation({
+    mutationFn: (videoId: string) => api.showInExplorer(videoId),
+  });
   
-  if (video === undefined) {
+  if (!video) {
     return null;
   }
   
   return (
-    <Box maxWidth="960px" px={2}>
+    <Box height="100vh" maxWidth="960px" px={2} pt={1} pb={2} display="grid" gridTemplateRows="auto 1fr">
       <Box>
-        <Typography fontSize={24} fontWeight="bold" pt={1}>{video.title}</Typography>
-        <Typography fontSize="0.8rem" color="grey.600">{video.fullPath}</Typography>
-        <Stack spacing={1} direction="row" alignItems="center" pt="2px" color="grey.800">
-          <Typography>{video.resolution}</Typography>
-          <Bullet />
-          <Typography>{formatDuration(video.duration)}</Typography>
-          <Bullet />
-          <Typography>{formatSize(video.size)}</Typography>
-          <Bullet />
-          <Typography>{formatIsoDate(video.lastModifiedTimeUtc)}</Typography>
+        <Box>
+          <Typography fontSize={24} fontWeight="bold">{video.title}</Typography>
+          <Typography fontSize="0.8rem" color="grey.600">{video.fullPath}</Typography>
+          <Stack spacing={1} direction="row" alignItems="center" pt="2px" color="grey.800">
+            <Typography>{video.width}x{video.height}</Typography>
+            <Bullet />
+            <Typography>{formatDuration(video.durationInSeconds)}</Typography>
+            <Bullet />
+            <Typography>{video.framerate} FPS</Typography>
+            <Bullet />
+            <Typography>{formatSize(video.size)}</Typography>
+            <Bullet />
+            <Typography>{formatIsoDate(video.lastModifiedTimeUtc)}</Typography>
+          </Stack>
+        </Box>
+        <Stack direction="row" spacing={1} pt="0.8rem" pb="0.6rem">
+          <Button
+            onClick={() => playVideo(video.videoId)}
+            variant="contained"
+            disableElevation
+            startIcon={<PlayArrowIcon />}
+          >
+            Play
+          </Button>
+          <Button
+            onClick={() => showInExplorer(video.videoId)}
+            variant="contained"
+            disableElevation
+            startIcon={<FolderIcon />}
+          >
+            Show in explorer
+          </Button>
+          <Button
+            onClick={() => setIsDeleteDialogOpen(true)}
+            variant="contained"
+            disableElevation
+            startIcon={<DeleteIcon />}
+            color="error"
+          >
+            Delete
+          </Button>
+          <DeleteVideoDialog
+            isOpen={isDeleteDialogOpen}
+            onClose={() => setIsDeleteDialogOpen(false)}
+            videoId={video.videoId}
+            videoTitle={video.title}
+            onSuccess={() => navigate(-1)}
+          />
         </Stack>
+        <Tags />
       </Box>
-      <Stack direction="row" spacing={1} pt="0.8rem" pb="0.6rem">
-        <Button
-          onClick={() => api.playVideo(video.videoId)}
-          variant="contained"
-          disableElevation
-          startIcon={<PlayArrowIcon />}
-        >
-          Play
-        </Button>
-        <Button
-          onClick={() => setIsDeleteDialogOpen(true)}
-          variant="contained"
-          disableElevation
-          startIcon={<DeleteIcon />}
-          color="error"
-        >
-          Delete
-        </Button>
-        <DeleteVideoDialog
-          isOpen={isDeleteDialogOpen}
-          onClose={() => setIsDeleteDialogOpen(false)}
-          videoId={video.videoId}
-          videoTitle={video.title}
-          onSuccess={() => navigate(-1)}
-        />
-      </Stack>
-      <Tags />
       <Thumbnail video={video} />
     </Box>
   );
@@ -181,140 +203,26 @@ interface ThumbnailProps {
 function Thumbnail(props: ThumbnailProps) {
   const { video } = props;
 
-  const imageRef = useRef<HTMLImageElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [seek, setSeek] = useState(video.thumbnailSeek);
-  const [sliderValue, setSliderValue] = useState(seek);
-  const handleSeekChange = useCallback((seek: number) => {
-    setIsLoading(true);
+  const [isThumbnailDialogOpen, setIsThumbnailDialogOpen] = useState(false);
 
-    if (seek < 0) {
-      seek = 0;
-    }
-    
-    if (seek > video.duration) {
-      seek = video.duration;
-    }
-    
-    setSeek(seek);
-    setSliderValue(seek);
-  }, [video.duration]);
-  
-  const queryClient = useQueryClient();
-  const videoQueryKey = useVideoQueryKey();
-  const { mutate, isPending: isMutating } = useMutation({
-    mutationFn: api.updateVideoThumbnailSeek,
-    onSuccess: data => {
-      queryClient.setQueryData(videoQueryKey, data);
-    },
-  });
-
-  useEffect(() => {
-    const imageEl = imageRef.current;
-
-    if (!imageEl) {
-      return;
-    }
-
-    const handleImageLoad = () => {
-      setIsLoading(false);
-    };
-
-    imageEl.addEventListener('load', handleImageLoad);
-
-    return () => {
-      imageEl.removeEventListener('load', handleImageLoad);
-    }
-  }, []);
-  
   return (
-    <Box pb={2}>
+    <Box display="grid" gridTemplateRows="auto 1fr" overflow="hidden">
       <Box display="flex" justifyContent="space-between" alignItems="center" pb={1}>
         <Typography fontSize={20} fontWeight="bold">Thumbnail</Typography>
-        <Button
-          variant="contained"
-          disableElevation
-          disabled={seek === video.thumbnailSeek || isMutating}
-          onClick={() => mutate({ videoId: video.videoId, seek })}
-        >
-          Update thumbnail
-        </Button>
+        <Button onClick={() => setIsThumbnailDialogOpen(true)} variant="contained" disableElevation>Change thumbnail</Button>
       </Box>
-      <Box pt="2px">
-        <Box
-          ref={imageRef}
-          component="img"
-          src={`${API_HOST}/api/videos/${video.videoId}/thumbnail?seek=${seek}`}
-          display="block"
-          width="100%"
-          borderRadius={2}
-        />
-        <Stack direction="row" spacing={1} alignItems="center" pt="2px">
-          <DurationLabel duration={sliderValue} />
-          <Box flex="1">
-            <Slider
-              min={0}
-              max={video.duration}
-              value={sliderValue}
-              onChange={(_, value) => setSliderValue(value as number)}
-              onChangeCommitted={(_, value) => handleSeekChange(value as number)}
-              disabled={isLoading}
-            />
-          </Box>
-          <DurationLabel duration={video.duration} />
-        </Stack>
-        <Box display="flex" justifyContent="center">
-          <Box display="flex" alignItems="center" gap={1}>
-            <SeekButton onClick={() => handleSeekChange(seek - 10)} disabled={isLoading}>-10s</SeekButton>
-            <SeekButton onClick={() => handleSeekChange(seek - 1)} disabled={isLoading}>-1s</SeekButton>
-            <Button
-              variant="contained"
-              disableElevation
-              onClick={() => handleSeekChange(video.thumbnailSeek)}
-              disabled={isLoading || seek === video.thumbnailSeek}
-            >
-              Reset
-            </Button>
-            <SeekButton onClick={() => handleSeekChange(seek + 1)} disabled={isLoading}>+1s</SeekButton>
-            <SeekButton onClick={() => handleSeekChange(seek + 10)} disabled={isLoading}>+10s</SeekButton>
-          </Box>
-        </Box>
-      </Box>
+      <Box
+        component="img"
+        src={API_HOST + video.thumbnailUrl}
+        maxWidth="100%"
+        maxHeight="100%"
+        overflow="hidden"
+        borderRadius={2}
+      />
+      <ChangeThumbnailDialog
+        open={isThumbnailDialogOpen}
+        onClose={() => setIsThumbnailDialogOpen(false)}
+      />
     </Box>
-  );
-}
-
-interface DurationLabelProps {
-  duration: number;
-}
-
-function DurationLabel(props: DurationLabelProps) {
-  const { duration } = props;
-
-  return (
-    <Typography fontSize="0.8rem" color="grey.800">{formatDuration(duration)}</Typography>
-  );
-}
-
-interface SeekButtonProps {
-  disabled?: boolean;
-  onClick?: () => void;
-  children?: ReactNode;
-}
-
-function SeekButton(props: SeekButtonProps) {
-  const { onClick, children, disabled } = props;
-  
-  return (
-    <Button
-      variant="contained"
-      disableElevation
-      sx={{ px: '8px', py: 0, minWidth: 0, textTransform: 'none' }}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </Button>
   );
 }

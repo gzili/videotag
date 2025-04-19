@@ -18,7 +18,7 @@ import {
   Switch,
   Typography
 } from "@mui/material";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api } from "api";
@@ -235,12 +235,19 @@ function tagInCategoryToTagDto(tag: CategoryDto['tags'][0], category: CategoryDt
 }
 
 function Videos() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const sortBy = searchParams.get('sortBy') || SortBy.LastModified;
+
+  const setSortBy = useCallback((sortBy: string) => {
+    setSearchParams(searchParams => {
+      searchParams.set(QueryParam.SortBy, sortBy);
+      return searchParams;
+    })
+  }, [setSearchParams]);
   
   const { videos } = useVideos();
-  
-  const [sortBy, setSortBy] = useState<SortByType>(SortBy.LastModified);
-  
+    
   useMemo(() => {
     if (videos !== undefined) {
       switch (sortBy) {
@@ -332,9 +339,9 @@ function VideoCard(props: VideoCardProps) {
     <div className="video-item">
       <div className="__thumbnail">
         <img src={API_HOST + video.thumbnailUrl} loading="lazy" />
-        <div className="__overlay-badge __resolution">{formatResolution(video.resolution)}</div>
+        <div className="__overlay-badge __resolution">{formatResolution(video.width, video.height)}</div>
         <div className="__overlay-badge __size">{formatSize(video.size)}</div>
-        <div className="__overlay-badge __duration">{formatDuration(video.duration)}</div>
+        <div className="__overlay-badge __duration">{formatDuration(video.durationInSeconds)}</div>
         <div className="__overlay-buttons-container">
           <div className="__overlay-buttons">
             <Link to={`videos/${video.videoId}`}>
@@ -356,7 +363,9 @@ function VideoCard(props: VideoCardProps) {
   );
 }
 
-function formatResolution(resolution: string) {
+function formatResolution(width: number, height: number) {
+  const resolution = `${width}x${height}`;
+
   switch (resolution) {
     case '3840x2160':
       return '4K';

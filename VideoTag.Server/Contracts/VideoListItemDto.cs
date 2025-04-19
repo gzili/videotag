@@ -8,9 +8,11 @@ public class VideoListItemDto
     
     public string Title { get; set; }
     
-    public int Duration { get; set; }
+    public int Width { get; set; }
     
-    public string Resolution { get; set; }
+    public int Height { get; set; }
+    
+    public double DurationInSeconds { get; set; }
     
     public long Size { get; set; }
     
@@ -24,11 +26,12 @@ public class VideoListItemDto
         {
             VideoId = video.VideoId,
             Title = Path.GetFileName(video.FullPath),
-            Duration = video.Duration,
-            Resolution = video.Resolution,
+            Width = video.Width,
+            Height = video.Height,
+            DurationInSeconds = video.DurationInSeconds,
             Size = video.Size,
             LastModifiedUnixSeconds = ((DateTimeOffset)video.LastModifiedTimeUtc).ToUnixTimeSeconds(),
-            ThumbnailUrl = $"/images/{video.VideoId:N}.jpg?s=${video.ThumbnailSeek}"
+            ThumbnailUrl = $"/images/{video.VideoId:N}_small.jpg?t={video.ThumbnailTimestamp}"
         };
     }
 }

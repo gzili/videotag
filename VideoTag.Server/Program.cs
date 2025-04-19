@@ -7,7 +7,9 @@ using Microsoft.Extensions.Options;
 using VideoTag.Server.BackgroundServices;
 using VideoTag.Server.Configuration;
 using VideoTag.Server.Contexts;
+using VideoTag.Server.Extensions;
 using VideoTag.Server.Hubs;
+using VideoTag.Server.OneTimeCommands;
 using VideoTag.Server.Repositories;
 using VideoTag.Server.Services;
 using VideoTag.Server.SqlTypeHandlers;
@@ -32,6 +34,8 @@ builder.Services.AddSingleton<IValidateOptions<SyncOptions>, SyncOptionsValidati
 builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<DapperContext>();
+builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
+builder.Services.AddSingleton<IMetaRepository, MetaRepository>();
 builder.Services.AddSingleton<VideoLibrarySyncTrigger>();
 builder.Services.AddSingleton<IVideoRepository, VideoRepository>();
 builder.Services.AddSingleton<IVideoService, VideoService>();
@@ -39,8 +43,13 @@ builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
 builder.Services.AddSingleton<ITagRepository, TagRepository>();
 builder.Services.AddSingleton<ITagService, TagService>();
+builder.Services.AddSingleton<ILibraryService, LibraryService>();
+builder.Services.AddSingleton<ICustomThumbnailsRepository, CustomThumbnailsRepository>();
 
+builder.Services.AddHostedService<RebuildJob>();
 builder.Services.AddHostedService<VideoLibrarySync>();
+
+builder.Services.AddSingleton<UpdateMigrationVersionCommand>();
 
 builder.Services.AddCors(options =>
 {
@@ -59,6 +68,8 @@ builder.Services.AddControllers()
     });
 
 var app = builder.Build();
+
+app.EnsureMigrationVersionUpdated();
 
 using (var scope = app.Services.CreateScope())
 {

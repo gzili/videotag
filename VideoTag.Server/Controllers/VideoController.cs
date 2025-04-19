@@ -56,6 +56,20 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
             return NotFound();
         }
     }
+
+    [HttpPost("{videoId:guid}/show-in-explorer")]
+    public async Task<IActionResult> ShowInExplorer(Guid videoId)
+    {
+        try
+        {
+            await videoService.ShowInExplorer(videoId);
+            return Ok();
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+    }
     
     [HttpDelete("{videoId:guid}")]
     public async Task<IActionResult> DeleteVideo(Guid videoId, bool keepFileOnDisk)
@@ -72,7 +86,7 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
     }
 
     [HttpGet("{videoId:guid}/thumbnail")]
-    public async Task<IActionResult> GetThumbnail(Guid videoId, int seek)
+    public async Task<IActionResult> GetThumbnail(Guid videoId, double seek)
     {
         try
         {
@@ -86,11 +100,29 @@ public class VideoController(IVideoService videoService, VideoLibrarySyncTrigger
     }
 
     [HttpPut("{videoId:guid}/thumbnail")]
-    public async Task<ActionResult<VideoDto>> UpdateThumbnail(Guid videoId, int seek)
+    public async Task<ActionResult<VideoDto>> UpdateThumbnailSeek(Guid videoId, double seek)
     {
         try
         {
             var video = await videoService.UpdateThumbnailSeek(videoId, seek);
+            return Ok(VideoDto.FromVideo(video));
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpPost("{videoId:guid}/custom-thumbnail")]
+    public async Task<ActionResult<VideoDto>> UploadThumbnail(Guid videoId, UploadCustomThumbnailDto dto)
+    {
+        try
+        {
+            var stream = new MemoryStream((int)dto.File.Length);
+            await dto.File.CopyToAsync(stream);
+            
+            var video = await videoService.SaveCustomThumbnail(videoId, stream.ToArray());
+            
             return Ok(VideoDto.FromVideo(video));
         }
         catch (InvalidOperationException)

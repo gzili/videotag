@@ -3,20 +3,24 @@ namespace VideoTag.Server.Entities;
 public class Video
 {
     public Guid VideoId { get; set; }
-    
     public string FullPath { get; set; }
     
-    // Video duration in seconds
-    public int Duration { get; set; }
+    public int Width { get; set; }
     
-    // Video resolution (e.g. 1920x1080)
-    public string Resolution { get; set; }
+    public int Height { get; set; }
     
-    // The size of the file in bytes
+    public double Framerate { get; set; }
+    
+    public double DurationInSeconds { get; set; }
+    
+    public long Bitrate { get; set; }
+    
     public long Size { get; set; }
     
     public DateTime LastModifiedTimeUtc { get; set; }
     
     // Thumbnail seek in seconds from the start of the video
-    public int ThumbnailSeek { get; set; }
+    public double ThumbnailSeek { get; set; }
+    
+    public long ThumbnailTimestamp { get; set; }
 }

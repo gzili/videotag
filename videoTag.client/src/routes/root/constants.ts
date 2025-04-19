@@ -9,4 +9,5 @@ export type SortByType = typeof SortBy[keyof typeof SortBy];
 export const QueryParam = {
   EditMode: 'editMode',
   TagIds: 'tagIds',
+  SortBy: 'sortBy',
 } as const;

@@ -57,7 +57,10 @@ export const api = {
     return http.get(`videos/${videoId}`).json<VideoDto>();
   },
   playVideo(videoId: string) {
-    http.post(`videos/${videoId}/play`);
+    return http.post(`videos/${videoId}/play`);
+  },
+  showInExplorer(videoId: string) {
+    return http.post(`videos/${videoId}/show-in-explorer`);
   },
   deleteVideo(videoId: string, keepFileOnDisk: boolean) {
     return http.delete(`videos/${videoId}?keepFileOnDisk=${keepFileOnDisk}`);
@@ -74,4 +77,10 @@ export const api = {
   updateVideoThumbnailSeek({ videoId, seek }: { videoId: string, seek: number }) {
     return http.put(`videos/${videoId}/thumbnail?seek=${seek}`).json<VideoDto>();
   },
+  uploadCustomThumbnail(videoId: string, file: File) {
+    const formData = new FormData();
+    formData.set('file', file);
+
+    return http.post(`videos/${videoId}/custom-thumbnail`, { body: formData }).json<VideoDto>();
+  }
 };
