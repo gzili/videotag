@@ -11,7 +11,9 @@ export function useCategories(includeTags?: boolean) {
         categories.push(categories.splice(otherCategoryIndex, 1)[0]);
       }
       return categories;
-    }
+    },
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 
   return ({ categories: data });

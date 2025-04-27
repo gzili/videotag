@@ -49,11 +49,10 @@ export function EditTagDialog(props: EditTagDialogProps) {
 
       return api.createTag(dto);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      await queryClient.invalidateQueries({ queryKey: ['tags'] });
       onClose();
-      queryClient.invalidateQueries({
-        queryKey: ['categories'],
-      });
     },
   });
 

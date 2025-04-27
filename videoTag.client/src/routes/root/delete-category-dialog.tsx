@@ -20,11 +20,10 @@ export function DeleteCategoryDialog(props: DeleteCategoryDialogProps) {
 
   const { mutate: deleteCategory } = useMutation({
     mutationFn: () => api.deleteCategory(category.categoryId),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      await queryClient.invalidateQueries({ queryKey: ['tags'] });
       onClose();
-      queryClient.invalidateQueries({
-        queryKey: ['categories'],
-      });
     },
   });
 

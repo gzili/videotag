@@ -29,7 +29,12 @@ export function useVideo() {
 export function useTags() {
   const { data } = useQuery({
     queryKey: ['tags'],
-    queryFn: () => api.getTags(),
+    queryFn: async () => {
+      const tags = await api.getTags();
+      return tags.sort((a, b) => a.category.label.localeCompare(b.category.label, "en"))
+    },
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
   return ({ tags: data });
 }

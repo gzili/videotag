@@ -20,11 +20,10 @@ export function DeleteTagDialog(props: DeleteTagDialogProps) {
 
   const { mutate: deleteTag } = useMutation({
     mutationFn: () => api.deleteTag(tag.tagId),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
+      await queryClient.invalidateQueries({ queryKey: ['tags'] });
       onClose();
-      queryClient.invalidateQueries({
-        queryKey: ['categories'],
-      });
     },
   });
 
