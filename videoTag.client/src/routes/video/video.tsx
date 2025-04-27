@@ -188,10 +188,12 @@ function TagSelector(props: TagSelectorProps) {
     <Autocomplete
       renderInput={(params) => <TextField {...params} label="Add tag" />}
       options={tags}
+      groupBy={(option) => option.category.label}
       value={null}
       onChange={handleChange}
       size="small"
       blurOnSelect
+      autoHighlight
     />
   );
 }
