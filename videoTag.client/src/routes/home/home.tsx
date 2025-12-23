@@ -22,7 +22,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api } from "api";
-import { CategoryDto, TagDto, VideoListItemDto } from 'api/types';
+import { CategoryDto, CategoryTagDto, TagDto, VideoListItemDto } from 'api/types';
 import { DeleteVideoDialog } from 'components';
 import { API_HOST } from "env.ts";
 import { useCategories } from 'hooks';
@@ -71,12 +71,12 @@ export function Tags() {
 
   function getTagClickHandler() {
     if (editMode) {
-      return (tag: CategoryDto['tags'][0], category: CategoryDto) => {
-        setTag(tagInCategoryToTagDto(tag, category));
+      return (tag: CategoryTagDto, category: CategoryDto) => {
+        setTag(categoryTagDtoToTagDto(tag, category));
         setIsEditTagDialogOpen(true);
       };
     } else {
-      return (tag: CategoryDto['tags'][0]) => {
+      return (tag: CategoryTagDto) => {
         if (tagIds.includes(tag.tagId)) {
           searchParams.delete(QueryParam.TagIds, tag.tagId);
         } else {
@@ -96,7 +96,7 @@ export function Tags() {
 
   const { categories } = useCategories(true);
 
-  if (categories === undefined) {
+  if (!categories) {
     return null;
   }
 
@@ -176,12 +176,12 @@ export function Tags() {
               {c.tags.map(t => (
                 <Chip
                   key={t.tagId}
-                  label={t.label}
+                  label={`${t.label} (${t.videoCount})`}
                   color={tagIds.includes(t.tagId) ? "primary" : undefined}
                   onClick={() => handleTagClick(t, c)}
                   onDelete={editMode ? (
                     () => {
-                      setTag(tagInCategoryToTagDto(t, c));
+                      setTag(categoryTagDtoToTagDto(t, c));
                       setIsDeleteTagDialogOpen(true);
                     }
                   ) : undefined}
@@ -223,7 +223,7 @@ export function Tags() {
   );
 }
 
-function tagInCategoryToTagDto(tag: CategoryDto['tags'][0], category: CategoryDto) {
+function categoryTagDtoToTagDto(tag: CategoryTagDto, category: CategoryDto): TagDto {
   return ({
     tagId: tag.tagId,
     label: tag.label,

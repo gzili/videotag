@@ -67,10 +67,16 @@ public class CategoryRepository(DapperContext dapperContext) : ICategoryReposito
     private async Task<IEnumerable<Category>> GetCategoriesWithTags()
     {
         const string query = """
-                             SELECT C.CategoryId, C.Label, T.TagId, T.Label
+                             WITH TagsByVideo AS (
+                                 SELECT TagId, COUNT(*) VideoCount
+                                 FROM VideoTags
+                                 GROUP BY TagId
+                             )
+                             SELECT C.CategoryId, C.Label, T.TagId, T.Label, coalesce(TBV.VideoCount, 0) VideoCount
                              FROM Categories C
-                                 LEFT JOIN Tags T on C.CategoryId = T.CategoryId
-                             ORDER BY C.Label, T.Label
+                                 JOIN Tags T on T.CategoryId = C.CategoryId
+                                 LEFT JOIN TagsByVideo TBV on TBV.TagId = T.TagId
+                             ORDER BY T.Label
                              """;
 
         var categories = new Dictionary<Guid, Category>();

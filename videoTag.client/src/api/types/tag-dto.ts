@@ -1,8 +1,10 @@
 export interface TagDto {
   tagId: string;
   label: string;
-  category: {
-    categoryId: string;
-    label: string;
-  };
+  category: TagCategoryDto;
+}
+
+export interface TagCategoryDto {
+  categoryId: string;
+  label: string;
 }

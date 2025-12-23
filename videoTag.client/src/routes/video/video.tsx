@@ -130,6 +130,7 @@ function Tags() {
     mutationFn: api.addTagToVideo,
     onSuccess: tags => {
       queryClient.setQueryData(queryKey, tags);
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });
 
@@ -137,6 +138,7 @@ function Tags() {
     mutationFn: api.removeTagFromVideo,
     onSuccess: tags => {
       queryClient.setQueryData(queryKey, tags);
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });
 
