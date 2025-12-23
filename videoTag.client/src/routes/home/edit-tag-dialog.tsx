@@ -1,36 +1,34 @@
 import { Autocomplete, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from "@mui/material";
-import { CategoryDto, TagCreateOrUpdateDto, TagDto } from "api/types";
-import { useEffect, useState } from "react";
+import { CategoryDto, TagCategoryDto, TagCreateOrUpdateDto, TagDto } from "api/types";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "api";
 
-interface EditTagDialogProps {
+interface EditTagDialogProps extends EditTagDialogContentProps {
   isOpen: boolean;
+}
+
+export function EditTagDialog(props: EditTagDialogProps) {
+  const { isOpen, ...restProps } = props;
+
+  return (
+    <Dialog open={isOpen} maxWidth="xs" fullWidth>
+      <EditTagDialogContent {...restProps} />
+    </Dialog>
+  );
+}
+
+interface EditTagDialogContentProps {
   onClose: () => void;
   categories: CategoryDto[];
   tag: TagDto | null;
 }
 
-export function EditTagDialog(props: EditTagDialogProps) {
-  const {
-    isOpen,
-    onClose,
-    categories,
-    tag,
-  } = props;
+function EditTagDialogContent(props: EditTagDialogContentProps) {
+  const { onClose, categories, tag } = props;
 
-  const [label, setLabel] = useState('');
-  const [category, setCategory] = useState<TagDto['category'] | null>(null);
-
-  useEffect(() => {
-    if (tag) {
-      setLabel(tag.label);
-      setCategory(tag.category);
-    } else {
-      setLabel('');
-      setCategory(null);
-    }
-  }, [tag]);
+  const [label, setLabel] = useState(tag?.label ?? '');
+  const [category, setCategory] = useState<TagCategoryDto | null>(tag?.category ?? null);
 
   const mappedCategories = categories.map(mapCategory);
 
@@ -57,13 +55,13 @@ export function EditTagDialog(props: EditTagDialogProps) {
   });
 
   return (
-    <Dialog open={isOpen} maxWidth="xs" fullWidth>
+    <>
       <DialogTitle>{tag ? 'Edit' : 'Create'} tag</DialogTitle>
       <DialogContent sx={{ overflowY: 'visible' }}>
-      <Stack spacing={2}>
-        <TextField label="Label" value={label} onChange={e => setLabel(e.target.value)} />
-        <CategoryAutocomplete options={mappedCategories} value={category} onChange={value => setCategory(value)} />
-      </Stack>
+        <Stack spacing={2}>
+          <TextField label="Label" value={label} onChange={e => setLabel(e.target.value)} />
+          <CategoryAutocomplete options={mappedCategories} value={category} onChange={value => setCategory(value)} />
+        </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={() => onClose()}>Cancel</Button>
@@ -76,7 +74,7 @@ export function EditTagDialog(props: EditTagDialogProps) {
           {tag ? 'Update' : 'Create'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </>
   );
 }
 
