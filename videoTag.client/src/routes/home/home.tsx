@@ -4,9 +4,12 @@ import FolderIcon from '@mui/icons-material/Folder';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SellIcon from '@mui/icons-material/Sell';
 import SyncIcon from '@mui/icons-material/Sync';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import {
   Box,
   Button,
+  ButtonGroup,
   Chip,
   FormControl,
   FormControlLabel,
@@ -28,7 +31,7 @@ import { API_HOST } from "env.ts";
 import { useCategories } from 'hooks';
 import { formatDuration, formatSize } from "utils.ts";
 
-import { QueryParam, SortBy, SortByType } from './constants.ts';
+import { LocalStorageKey, QueryParam, SortBy, SortByType } from './constants.ts';
 import { DeleteCategoryDialog } from './delete-category-dialog.tsx';
 import { DeleteTagDialog } from './delete-tag-dialog.tsx';
 import { EditCategoryDialog } from './edit-category-dialog.tsx';
@@ -235,6 +238,14 @@ function categoryTagDtoToTagDto(tag: CategoryTagDto, category: CategoryDto): Tag
 }
 
 function Videos() {
+  const [gridItemSize, setGridItemSize] = useState(
+    () => parseInt(localStorage.getItem(LocalStorageKey.GridItemSize) ?? '', 10) || 200
+  );
+  const handleGridItemSizeChange = (newSize: number) => {
+    localStorage.setItem(LocalStorageKey.GridItemSize, newSize.toString());
+    setGridItemSize(newSize);
+  }
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const sortBy = searchParams.get('sortBy') || SortBy.LastModified;
@@ -288,22 +299,32 @@ function Videos() {
             Sync
           </Button>
         </Box>
-        <FormControl>
-          <InputLabel id="sort-by-label">Sort by</InputLabel>
-          <Select
-            size="small"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as SortByType)}
-            labelId="sort-by-label"
-            label="Sort by"
-          >
-            <MenuItem value={SortBy.LastModified}>Last modified</MenuItem>
-            <MenuItem value={SortBy.Title}>Title</MenuItem>
-            <MenuItem value={SortBy.Size}>Size</MenuItem>
-          </Select>
-        </FormControl>
+        <Box display="flex" gap="0.5rem" alignItems="center">
+          <ButtonGroup size="small" variant="contained" disableElevation>
+            <Button onClick={() => handleGridItemSizeChange(gridItemSize - 50)} disabled={gridItemSize <= 200}>
+              <ZoomOutIcon fontSize="small" />
+            </Button>
+            <Button onClick={() => handleGridItemSizeChange(gridItemSize + 50)} disabled={gridItemSize >= 500}>
+              <ZoomInIcon fontSize="small" />
+            </Button>
+          </ButtonGroup>
+          <FormControl>
+            <InputLabel id="sort-by-label">Sort by</InputLabel>
+            <Select
+              size="small"
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as SortByType)}
+              labelId="sort-by-label"
+              label="Sort by"
+            >
+              <MenuItem value={SortBy.LastModified}>Last modified</MenuItem>
+              <MenuItem value={SortBy.Title}>Title</MenuItem>
+              <MenuItem value={SortBy.Size}>Size</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
-      <Box pt={1} display="grid" gridTemplateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={1}>
+      <Box pt={1} display="grid" gridTemplateColumns={`repeat(auto-fill, minmax(${gridItemSize}px, 1fr))`} gap={1}>
         {videos.map(video => (
           <VideoCard
             key={video.videoId}

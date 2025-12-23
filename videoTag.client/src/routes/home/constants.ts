@@ -11,3 +11,7 @@ export const QueryParam = {
   TagIds: 'tagIds',
   SortBy: 'sortBy',
 } as const;
+
+export enum LocalStorageKey {
+  GridItemSize = 'VideoTag-gridItemSize',
+}
