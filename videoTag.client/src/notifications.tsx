@@ -5,6 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import * as signalR from "@microsoft/signalr";
 import { API_HOST } from 'env';
 import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from 'queries';
 
 const HubEvents = {
   SyncStarted: 'syncStarted',
@@ -61,7 +62,7 @@ export function Notifications() {
             description: `Added ${numAdded} entries. Updated ${numUpdated} entries. Removed ${numRemoved} entries.`,
           })
           queryClient.invalidateQueries({
-            queryKey: ['videos'],
+            queryKey: queryKeys.videos(),
           });
         },
       },

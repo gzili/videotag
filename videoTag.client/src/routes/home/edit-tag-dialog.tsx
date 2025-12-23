@@ -3,6 +3,7 @@ import { CategoryDto, TagCategoryDto, TagCreateOrUpdateDto, TagDto } from "api/t
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "api";
+import { queryKeys } from 'queries';
 
 interface EditTagDialogProps extends EditTagDialogContentProps {
   isOpen: boolean;
@@ -48,8 +49,8 @@ function EditTagDialogContent(props: EditTagDialogContentProps) {
       return api.createTag(dto);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['categories'] });
-      await queryClient.invalidateQueries({ queryKey: ['tags'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tags });
       onClose();
     },
   });

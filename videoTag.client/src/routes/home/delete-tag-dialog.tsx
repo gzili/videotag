@@ -2,6 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogContentText, Dialog
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "api";
 import { TagDto } from "api/types";
+import { queryKeys } from 'queries';
 
 interface DeleteTagDialogProps {
   isOpen: boolean;
@@ -21,8 +22,8 @@ export function DeleteTagDialog(props: DeleteTagDialogProps) {
   const { mutate: deleteTag } = useMutation({
     mutationFn: () => api.deleteTag(tag.tagId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['categories'] });
-      await queryClient.invalidateQueries({ queryKey: ['tags'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tags });
       onClose();
     },
   });

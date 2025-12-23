@@ -12,14 +12,8 @@ export const api = {
   createCategory(dto: CategoryCreateOrUpdateDto) {
     return http.post('categories', { json: dto }).json<CategoryDto>();
   },
-  getCategories(includeTags = false) {
-    const searchParams = new URLSearchParams();
-    
-    if (includeTags) {
-      searchParams.set('includeTags', 'true');
-    }
-
-    return http.get('categories', { searchParams }).json<CategoryDto[]>();
+  getCategories() {
+    return http.get('categories?includeTags=true').json<CategoryDto[]>();
   },
   updateCategory(categoryId: string, dto: CategoryCreateOrUpdateDto) {
     return http.put(`categories/${categoryId}`, { json: dto }).json<CategoryDto>();

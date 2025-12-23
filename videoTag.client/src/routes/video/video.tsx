@@ -8,15 +8,19 @@ import { api } from "api";
 import { TagDto, VideoDto } from "api/types";
 import { API_HOST } from "env.ts";
 import { formatDuration } from "utils.ts";
-import { useTags, useVideo, useVideoId, useVideoTags } from "./hooks.ts";
+import { useVideoId } from "./hooks.ts";
 import { DeleteVideoDialog } from 'components/delete-video-dialog.tsx';
 import { useNavigate } from 'react-router-dom';
 import { ChangeThumbnailDialog } from './components/change-thumbnail-dialog.tsx';
+import { queryKeys } from 'queries/query-keys.ts';
+import { useTags, useVideo, useVideoTags } from 'queries';
 
 export function Video() {
-  const { video } = useVideo();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const videoId = useVideoId();
   const navigate = useNavigate();
+
+  const { data: video } = useVideo(videoId);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { mutate: playVideo } = useMutation({
     mutationFn: (videoId: string) => api.playVideo(videoId),
@@ -121,28 +125,27 @@ function formatIsoDate(isoDate: string) {
 
 function Tags() {
   const videoId = useVideoId();
-
-  const { tags, queryKey } = useVideoTags();
-  
   const queryClient = useQueryClient();
+
+  const { data: tags } = useVideoTags(videoId);
   
   const { mutate: mutateAddTag } = useMutation({
     mutationFn: api.addTagToVideo,
     onSuccess: tags => {
-      queryClient.setQueryData(queryKey, tags);
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.setQueryData(queryKeys.videoTags(videoId), tags);
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
   });
 
   const { mutate: mutateRemoveTag } = useMutation({
     mutationFn: api.removeTagFromVideo,
     onSuccess: tags => {
-      queryClient.setQueryData(queryKey, tags);
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.setQueryData(queryKeys.videoTags(videoId), tags);
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
   });
 
-  if (tags === undefined) {
+  if (!tags) {
     return null;
   }
 
@@ -174,7 +177,7 @@ interface TagSelectorProps {
 function TagSelector(props: TagSelectorProps) {
   const { onSelect } = props;
 
-  const { tags } = useTags();
+  const { data: tags } = useTags();
 
   const handleChange = useCallback((_: unknown, value: TagDto | null) => {
     if (value !== null) {

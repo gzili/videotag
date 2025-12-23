@@ -28,15 +28,14 @@ import { api } from "api";
 import { CategoryDto, CategoryTagDto, TagDto, VideoListItemDto } from 'api/types';
 import { DeleteVideoDialog } from 'components';
 import { API_HOST } from "env.ts";
-import { useCategories } from 'hooks';
+import { useCategories, useVideos } from 'queries';
 import { formatDuration, formatSize } from "utils.ts";
 
-import { LocalStorageKey, QueryParam, SortBy, SortByType } from './constants.ts';
+import { LocalStorageKey, QueryParam, SortBy } from './constants.ts';
 import { DeleteCategoryDialog } from './delete-category-dialog.tsx';
 import { DeleteTagDialog } from './delete-tag-dialog.tsx';
 import { EditCategoryDialog } from './edit-category-dialog.tsx';
 import { EditTagDialog } from './edit-tag-dialog.tsx';
-import { useVideos } from "./hooks.ts";
 
 export function Home() {
   return (
@@ -50,7 +49,7 @@ export function Home() {
 export function Tags() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const editMode = searchParams.get(QueryParam.EditMode) !== null;
+  const editMode = searchParams.get(QueryParam.EditMode) === '1';
 
   const handleEditModeChange = (isEnabled: boolean) => {
     if (isEnabled) {
@@ -98,7 +97,7 @@ export function Tags() {
   const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false);
   const [category, setCategory] = useState<CategoryDto | null>(null);
 
-  const { categories } = useCategories(true);
+  const { data: categories } = useCategories();
 
   if (!categories) {
     return null;
@@ -244,6 +243,7 @@ function Videos() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const tagIds = useMemo(() => searchParams.getAll('tagIds'), [searchParams]);
   const sortBy = searchParams.get('sortBy') || SortBy.LastModified;
 
   const setSortBy = useCallback((sortBy: string) => {
@@ -253,10 +253,10 @@ function Videos() {
     })
   }, [setSearchParams]);
   
-  const { videos } = useVideos();
+  const { data: videos } = useVideos(tagIds);
     
   useMemo(() => {
-    if (videos !== undefined) {
+    if (videos) {
       switch (sortBy) {
         case SortBy.LastModified:
           videos.sort((a, b) => b.lastModifiedUnixSeconds - a.lastModifiedUnixSeconds);
@@ -274,7 +274,7 @@ function Videos() {
   const [isVideoDeleteDialogOpen, setIsVideoDeleteDialogOpen] = useState(false);
   const [video, setVideo] = useState<VideoListItemDto | null>(null);
 
-  if (videos === undefined) {
+  if (!videos) {
     return null;
   }
   
@@ -309,7 +309,7 @@ function Videos() {
             <Select
               size="small"
               value={sortBy}
-              onChange={e => setSortBy(e.target.value as SortByType)}
+              onChange={e => setSortBy(e.target.value)}
               labelId="sort-by-label"
               label="Sort by"
             >
