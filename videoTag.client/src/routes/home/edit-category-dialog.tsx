@@ -1,31 +1,32 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 import { CategoryCreateOrUpdateDto, CategoryDto } from "api/types";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "api";
 
-interface EditCategoryDialogProps {
+interface EditCategoryDialogProps extends EditCategoryDialogContentProps {
   isOpen: boolean;
+}
+
+export function EditCategoryDialog(props: EditCategoryDialogProps) {
+  const { isOpen, ...restProps } = props;
+
+  return (
+    <Dialog open={isOpen} maxWidth="xs" fullWidth>
+      <EditCategoryDialogContent {...restProps} />
+    </Dialog>
+  );
+}
+
+interface EditCategoryDialogContentProps {
   onClose: () => void;
   category: CategoryDto | null;
 }
 
-export function EditCategoryDialog(props: EditCategoryDialogProps) {
-  const {
-    isOpen,
-    onClose,
-    category,
-  } = props;
+function EditCategoryDialogContent(props: EditCategoryDialogContentProps) {
+  const { onClose, category } = props;
 
-  const [label, setLabel] = useState('');
-
-  useEffect(() => {
-    if (category) {
-      setLabel(category.label);
-    } else {
-      setLabel('');
-    }
-  }, [category]);
+  const [label, setLabel] = useState(category?.label ?? '');
 
   const queryClient = useQueryClient();
 
@@ -47,7 +48,7 @@ export function EditCategoryDialog(props: EditCategoryDialogProps) {
   });
 
   return (
-    <Dialog open={isOpen} maxWidth="xs" fullWidth>
+    <>
       <DialogTitle>{category ? 'Edit' : 'Create'} group</DialogTitle>
       <DialogContent sx={{ overflowY: 'visible' }}>
         <TextField
@@ -68,6 +69,6 @@ export function EditCategoryDialog(props: EditCategoryDialogProps) {
           {category ? 'Update' : 'Create'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </>
   );
 }
