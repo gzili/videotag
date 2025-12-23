@@ -72,26 +72,27 @@ export function Tags() {
   const [isDeleteTagDialogOpen, setIsDeleteTagDialogOpen] = useState(false);
   const [tag, setTag] = useState<TagDto | null>(null);
 
-  function getTagClickHandler() {
-    if (editMode) {
-      return (tag: CategoryTagDto, category: CategoryDto) => {
-        setTag(categoryTagDtoToTagDto(tag, category));
-        setIsEditTagDialogOpen(true);
-      };
+  const handleSelectTag = (tag: CategoryTagDto) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+
+    if (tagIds.includes(tag.tagId)) {
+      newSearchParams.delete(QueryParam.TagIds, tag.tagId);
     } else {
-      return (tag: CategoryTagDto) => {
-        if (tagIds.includes(tag.tagId)) {
-          searchParams.delete(QueryParam.TagIds, tag.tagId);
-        } else {
-          searchParams.append(QueryParam.TagIds, tag.tagId);
-        }
-    
-        setSearchParams(searchParams);
-      };
+      newSearchParams.append(QueryParam.TagIds, tag.tagId);
     }
+
+    setSearchParams(newSearchParams);
   }
 
-  const handleTagClick = getTagClickHandler();
+  const handleEditTag = (tag: CategoryTagDto, category: CategoryDto) => {
+    setTag(categoryTagDtoToTagDto(tag, category));
+    setIsEditTagDialogOpen(true);
+  }
+
+  const handleDeleteTag = (tag: CategoryTagDto, category: CategoryDto) => {
+    setTag(categoryTagDtoToTagDto(tag, category));
+    setIsDeleteTagDialogOpen(true);
+  }
 
   const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
   const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false);
@@ -180,14 +181,9 @@ export function Tags() {
                 <Chip
                   key={t.tagId}
                   label={`${t.label} (${t.videoCount})`}
-                  color={tagIds.includes(t.tagId) ? "primary" : undefined}
-                  onClick={() => handleTagClick(t, c)}
-                  onDelete={editMode ? (
-                    () => {
-                      setTag(categoryTagDtoToTagDto(t, c));
-                      setIsDeleteTagDialogOpen(true);
-                    }
-                  ) : undefined}
+                  color={tagIds.includes(t.tagId) ? 'primary' : undefined}
+                  onClick={() => editMode ? handleEditTag(t, c) : handleSelectTag(t)}
+                  onDelete={editMode ? () => handleDeleteTag(t, c) : undefined}
                 />
               ))}
               {c.tags.length === 0 && (
