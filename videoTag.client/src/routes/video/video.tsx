@@ -1,5 +1,6 @@
 import DeleteIcon from '@mui/icons-material/Delete';
 import FolderIcon from '@mui/icons-material/Folder';
+import PhotoIcon from '@mui/icons-material/Photo';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Autocomplete, Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -216,7 +217,14 @@ function Thumbnail(props: ThumbnailProps) {
     <Box display="grid" gridTemplateRows="auto 1fr" overflow="hidden">
       <Box display="flex" justifyContent="space-between" alignItems="center" pb={1}>
         <Typography fontSize={20} fontWeight="bold">Thumbnail</Typography>
-        <Button onClick={() => setIsThumbnailDialogOpen(true)} variant="contained" disableElevation>Change thumbnail</Button>
+        <Button
+          onClick={() => setIsThumbnailDialogOpen(true)}
+          variant="contained"
+          startIcon={<PhotoIcon />}
+          disableElevation
+        >
+          Change thumbnail
+        </Button>
       </Box>
       <Box
         component="img"
