@@ -76,7 +76,7 @@ public class CategoryRepository(DapperContext dapperContext) : ICategoryReposito
                              FROM Categories C
                                  JOIN Tags T on T.CategoryId = C.CategoryId
                                  LEFT JOIN TagsByVideo TBV on TBV.TagId = T.TagId
-                             ORDER BY T.Label
+                             ORDER BY C.Label, T.Label
                              """;
 
         var categories = new Dictionary<Guid, Category>();
