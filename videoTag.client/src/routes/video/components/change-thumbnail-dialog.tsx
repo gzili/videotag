@@ -6,8 +6,9 @@ import { api } from "api";
 import { VideoDto } from "api/types";
 import { API_HOST } from "env.ts";
 import { formatDuration, getRandomInt } from "utils.ts";
-import { useVideo, useVideoId, useVideoQueryKey } from "../hooks.ts";
+import { useVideoId } from "../hooks.ts";
 import { DialogContextProvider, useDialogContext } from 'contexts/dialog-context.tsx';
+import { queryKeys, useVideo } from 'queries/index.ts';
 
 interface ChangeThumbnailDialogProps {
   open: boolean;
@@ -64,7 +65,8 @@ function ChangeThumbnailDialogContent() {
 }
 
 function ChooseFromVideoTabContentWrapper() {
-  const { video } = useVideo();
+  const videoId = useVideoId();
+  const { data: video } = useVideo(videoId);
 
   if (!video) {
     return null;
@@ -106,11 +108,10 @@ function ChooseFromVideoTabContent(props: ChooseFromVideoTabContentProps) {
   const { onClose } = useDialogContext();
   
   const queryClient = useQueryClient();
-  const videoQueryKey = useVideoQueryKey();
   const { mutate, isPending } = useMutation({
     mutationFn: api.updateVideoThumbnailSeek,
     onSuccess: data => {
-      queryClient.setQueryData(videoQueryKey, data);
+      queryClient.setQueryData(queryKeys.video(video.videoId), data);
       onClose();
     },
   });
@@ -250,12 +251,11 @@ const VisuallyHiddenInput = styled('input')({
 function UploadFileTabContent() {
   const videoId = useVideoId();
   const queryClient = useQueryClient();
-  const videoQueryKey = useVideoQueryKey();
   const { onClose } = useDialogContext();
   const { mutate, isPending } = useMutation({
     mutationFn: (file: File) => api.uploadCustomThumbnail(videoId, file),
     onSuccess: (data) => {
-      queryClient.setQueryData(videoQueryKey, data);
+      queryClient.setQueryData(queryKeys.video(videoId), data);
       onClose();
     },
   });

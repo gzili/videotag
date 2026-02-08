@@ -6,5 +6,6 @@ public class Tag
     public string Label { get; set; }
     public Guid CategoryId { get; set; }
     
+    public int VideoCount { get; set; }
     public Category? Category { get; set; }
 }

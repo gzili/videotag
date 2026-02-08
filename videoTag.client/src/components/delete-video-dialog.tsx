@@ -3,13 +3,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../api";
-
-interface DeleteVideoDialogContentProps {
-  videoId: string;
-  videoTitle: string;
-  onClose: () => void;
-  onSuccess?: () => void;
-}
+import { queryKeys } from 'queries';
 
 interface DeleteVideoDialogProps extends DeleteVideoDialogContentProps {
   isOpen: boolean;
@@ -29,6 +23,13 @@ export function DeleteVideoDialog(props: DeleteVideoDialogProps) {
   );
 }
 
+interface DeleteVideoDialogContentProps {
+  videoId: string;
+  videoTitle: string;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
+
 function DeleteVideoDialogContent(props: DeleteVideoDialogContentProps) {
   const { onClose, videoId, videoTitle, onSuccess } = props;
 
@@ -39,9 +40,8 @@ function DeleteVideoDialogContent(props: DeleteVideoDialogContentProps) {
   const { mutate: deleteVideo } = useMutation({
     mutationFn: () => api.deleteVideo(videoId, keepFileOnDisk),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['videos'],
-      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.videos() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
       onClose();
       onSuccess?.();
     },

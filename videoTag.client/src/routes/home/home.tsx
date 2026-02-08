@@ -4,9 +4,12 @@ import FolderIcon from '@mui/icons-material/Folder';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SellIcon from '@mui/icons-material/Sell';
 import SyncIcon from '@mui/icons-material/Sync';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import {
   Box,
   Button,
+  ButtonGroup,
   Chip,
   FormControl,
   FormControlLabel,
@@ -22,18 +25,17 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api } from "api";
-import { CategoryDto, TagDto, VideoListItemDto } from 'api/types';
+import { CategoryDto, CategoryTagDto, TagDto, VideoListItemDto } from 'api/types';
 import { DeleteVideoDialog } from 'components';
 import { API_HOST } from "env.ts";
-import { useCategories } from 'hooks';
+import { useCategories, useVideos } from 'queries';
 import { formatDuration, formatSize } from "utils.ts";
 
-import { QueryParam, SortBy, SortByType } from './constants.ts';
+import { LocalStorageKey, QueryParam, SortBy } from './constants.ts';
 import { DeleteCategoryDialog } from './delete-category-dialog.tsx';
 import { DeleteTagDialog } from './delete-tag-dialog.tsx';
 import { EditCategoryDialog } from './edit-category-dialog.tsx';
 import { EditTagDialog } from './edit-tag-dialog.tsx';
-import { useVideos } from "./hooks.ts";
 
 export function Home() {
   return (
@@ -47,7 +49,7 @@ export function Home() {
 export function Tags() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const editMode = searchParams.get(QueryParam.EditMode) !== null;
+  const editMode = searchParams.get(QueryParam.EditMode) === '1';
 
   const handleEditModeChange = (isEnabled: boolean) => {
     if (isEnabled) {
@@ -69,34 +71,35 @@ export function Tags() {
   const [isDeleteTagDialogOpen, setIsDeleteTagDialogOpen] = useState(false);
   const [tag, setTag] = useState<TagDto | null>(null);
 
-  function getTagClickHandler() {
-    if (editMode) {
-      return (tag: CategoryDto['tags'][0], category: CategoryDto) => {
-        setTag(tagInCategoryToTagDto(tag, category));
-        setIsEditTagDialogOpen(true);
-      };
+  const handleSelectTag = (tag: CategoryTagDto) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+
+    if (tagIds.includes(tag.tagId)) {
+      newSearchParams.delete(QueryParam.TagIds, tag.tagId);
     } else {
-      return (tag: CategoryDto['tags'][0]) => {
-        if (tagIds.includes(tag.tagId)) {
-          searchParams.delete(QueryParam.TagIds, tag.tagId);
-        } else {
-          searchParams.append(QueryParam.TagIds, tag.tagId);
-        }
-    
-        setSearchParams(searchParams);
-      };
+      newSearchParams.append(QueryParam.TagIds, tag.tagId);
     }
+
+    setSearchParams(newSearchParams);
   }
 
-  const handleTagClick = getTagClickHandler();
+  const handleEditTag = (tag: CategoryTagDto, category: CategoryDto) => {
+    setTag(categoryTagDtoToTagDto(tag, category));
+    setIsEditTagDialogOpen(true);
+  }
+
+  const handleDeleteTag = (tag: CategoryTagDto, category: CategoryDto) => {
+    setTag(categoryTagDtoToTagDto(tag, category));
+    setIsDeleteTagDialogOpen(true);
+  }
 
   const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
   const [isDeleteCategoryDialogOpen, setIsDeleteCategoryDialogOpen] = useState(false);
   const [category, setCategory] = useState<CategoryDto | null>(null);
 
-  const { categories } = useCategories(true);
+  const { data: categories } = useCategories();
 
-  if (categories === undefined) {
+  if (!categories) {
     return null;
   }
 
@@ -176,15 +179,10 @@ export function Tags() {
               {c.tags.map(t => (
                 <Chip
                   key={t.tagId}
-                  label={t.label}
-                  color={tagIds.includes(t.tagId) ? "primary" : undefined}
-                  onClick={() => handleTagClick(t, c)}
-                  onDelete={editMode ? (
-                    () => {
-                      setTag(tagInCategoryToTagDto(t, c));
-                      setIsDeleteTagDialogOpen(true);
-                    }
-                  ) : undefined}
+                  label={`${t.label} (${t.videoCount})`}
+                  color={tagIds.includes(t.tagId) ? 'primary' : undefined}
+                  onClick={() => editMode ? handleEditTag(t, c) : handleSelectTag(t)}
+                  onDelete={editMode ? () => handleDeleteTag(t, c) : undefined}
                 />
               ))}
               {c.tags.length === 0 && (
@@ -223,7 +221,7 @@ export function Tags() {
   );
 }
 
-function tagInCategoryToTagDto(tag: CategoryDto['tags'][0], category: CategoryDto) {
+function categoryTagDtoToTagDto(tag: CategoryTagDto, category: CategoryDto): TagDto {
   return ({
     tagId: tag.tagId,
     label: tag.label,
@@ -235,8 +233,17 @@ function tagInCategoryToTagDto(tag: CategoryDto['tags'][0], category: CategoryDt
 }
 
 function Videos() {
+  const [gridItemSize, setGridItemSize] = useState(
+    () => parseInt(localStorage.getItem(LocalStorageKey.GridItemSize) ?? '', 10) || 200
+  );
+  const handleGridItemSizeChange = (newSize: number) => {
+    localStorage.setItem(LocalStorageKey.GridItemSize, newSize.toString());
+    setGridItemSize(newSize);
+  }
+
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const tagIds = useMemo(() => searchParams.getAll('tagIds'), [searchParams]);
   const sortBy = searchParams.get('sortBy') || SortBy.LastModified;
 
   const setSortBy = useCallback((sortBy: string) => {
@@ -246,10 +253,10 @@ function Videos() {
     })
   }, [setSearchParams]);
   
-  const { videos } = useVideos();
+  const { data: videos } = useVideos(tagIds);
     
   useMemo(() => {
-    if (videos !== undefined) {
+    if (videos) {
       switch (sortBy) {
         case SortBy.LastModified:
           videos.sort((a, b) => b.lastModifiedUnixSeconds - a.lastModifiedUnixSeconds);
@@ -267,7 +274,7 @@ function Videos() {
   const [isVideoDeleteDialogOpen, setIsVideoDeleteDialogOpen] = useState(false);
   const [video, setVideo] = useState<VideoListItemDto | null>(null);
 
-  if (videos === undefined) {
+  if (!videos) {
     return null;
   }
   
@@ -288,22 +295,32 @@ function Videos() {
             Sync
           </Button>
         </Box>
-        <FormControl>
-          <InputLabel id="sort-by-label">Sort by</InputLabel>
-          <Select
-            size="small"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as SortByType)}
-            labelId="sort-by-label"
-            label="Sort by"
-          >
-            <MenuItem value={SortBy.LastModified}>Last modified</MenuItem>
-            <MenuItem value={SortBy.Title}>Title</MenuItem>
-            <MenuItem value={SortBy.Size}>Size</MenuItem>
-          </Select>
-        </FormControl>
+        <Box display="flex" gap="0.5rem" alignItems="center">
+          <ButtonGroup size="small" variant="contained" disableElevation>
+            <Button onClick={() => handleGridItemSizeChange(gridItemSize - 50)} disabled={gridItemSize <= 200}>
+              <ZoomOutIcon fontSize="small" />
+            </Button>
+            <Button onClick={() => handleGridItemSizeChange(gridItemSize + 50)} disabled={gridItemSize >= 500}>
+              <ZoomInIcon fontSize="small" />
+            </Button>
+          </ButtonGroup>
+          <FormControl>
+            <InputLabel id="sort-by-label">Sort by</InputLabel>
+            <Select
+              size="small"
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              labelId="sort-by-label"
+              label="Sort by"
+            >
+              <MenuItem value={SortBy.LastModified}>Last modified</MenuItem>
+              <MenuItem value={SortBy.Title}>Title</MenuItem>
+              <MenuItem value={SortBy.Size}>Size</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
       </Box>
-      <Box pt={1} display="grid" gridTemplateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap={1}>
+      <Box pt={1} display="grid" gridTemplateColumns={`repeat(auto-fill, minmax(${gridItemSize}px, 1fr))`} gap={1}>
         {videos.map(video => (
           <VideoCard
             key={video.videoId}

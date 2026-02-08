@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CategoryDto } from "api/types";
 import { api } from "api";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import { queryKeys } from 'queries';
 
 interface DeleteCategoryDialogProps {
   isOpen: boolean;
@@ -21,8 +22,8 @@ export function DeleteCategoryDialog(props: DeleteCategoryDialogProps) {
   const { mutate: deleteCategory } = useMutation({
     mutationFn: () => api.deleteCategory(category.categoryId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['categories'] });
-      await queryClient.invalidateQueries({ queryKey: ['tags'] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tags });
       onClose();
     },
   });

@@ -8,6 +8,7 @@ public class CategoryListItemDto
     {
         public Guid TagId { get; set; }
         public string Label { get; set; }
+        public int VideoCount { get; set; }
     }
     
     public Guid CategoryId { get; set; }
@@ -23,7 +24,8 @@ public class CategoryListItemDto
             Tags = category.Tags.Select(tag => new TagDto
             {
                 TagId = tag.TagId,
-                Label = tag.Label
+                Label = tag.Label,
+                VideoCount = tag.VideoCount
             }).ToList()
         };
     }
