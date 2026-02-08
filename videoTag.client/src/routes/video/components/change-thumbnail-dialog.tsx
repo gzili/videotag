@@ -5,7 +5,7 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { api } from "api";
 import { VideoDto } from "api/types";
 import { API_HOST } from "env.ts";
-import { formatDuration } from "utils.ts";
+import { formatDuration, getRandomInt } from "utils.ts";
 import { useVideoId } from "../hooks.ts";
 import { DialogContextProvider, useDialogContext } from 'contexts/dialog-context.tsx';
 import { queryKeys, useVideo } from 'queries/index.ts';
@@ -167,6 +167,14 @@ function ChooseFromVideoTabContent(props: ChooseFromVideoTabContentProps) {
         <Box display="flex" alignItems="center" gap={1} pb={1}>
           <SeekButton onClick={() => handleSeekChange(seek - 10)} disabled={isLoading}>-10s</SeekButton>
           <SeekButton onClick={() => handleSeekChange(seek - 1)} disabled={isLoading}>-1s</SeekButton>
+          <Button
+              variant="contained"
+              disableElevation
+              onClick={() => handleSeekChange(getRandomInt(intDuration))}
+              disabled={isLoading}
+            >
+              Random
+            </Button>
           <Button
             variant="contained"
             disableElevation

@@ -23,3 +23,7 @@ export function formatSize(bytes: number) {
     return `${bytes} bytes`;
   }
 }
+
+export function getRandomInt(max: number) {
+  return Math.floor(Math.random() * max);
+}
