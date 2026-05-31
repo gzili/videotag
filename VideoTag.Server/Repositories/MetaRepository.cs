@@ -7,11 +7,14 @@ public interface IMetaRepository
 {
     Task<bool> IsRebuildNeeded();
     Task ClearRebuildNeeded();
+    Task<bool> IsVacuumNeeded();
+    Task ClearVacuumNeeded();
 }
 
 public class MetaRepository(DapperContext dapperContext) : IMetaRepository
 {
     private const string RebuildNeeded = "RebuildNeeded";
+    private const string VacuumNeeded = "VacuumNeeded";
     
     public async Task<bool> IsRebuildNeeded()
     {
@@ -22,6 +25,17 @@ public class MetaRepository(DapperContext dapperContext) : IMetaRepository
     public async Task ClearRebuildNeeded()
     {
         await UpdateMetaValue(RebuildNeeded, "0");
+    }
+    
+    public async Task<bool> IsVacuumNeeded()
+    {
+        var value = await GetMetaValue(VacuumNeeded);
+        return value == "1";
+    }
+
+    public async Task ClearVacuumNeeded()
+    {
+        await UpdateMetaValue(VacuumNeeded, "0");
     }
 
     private async Task<string> GetMetaValue(string name)

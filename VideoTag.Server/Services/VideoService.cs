@@ -26,7 +26,8 @@ public interface IVideoService
 public class VideoService(
     IEnvironmentService environmentService,
     IVideoRepository videoRepository,
-    ICustomThumbnailsRepository customThumbnailsRepository) : IVideoService
+    ICustomThumbnailsRepository customThumbnailsRepository,
+    WatchLogService watchLogService) : IVideoService
 {
     private const string SmallSuffix = "small";
     private const string LargeSuffix = "large";
@@ -62,6 +63,8 @@ public class VideoService(
         {
             throw new FileNotFoundException("Video file does not exist", video.FullPath);
         }
+
+        await watchLogService.TrackVideoWatched(video.VideoId);
         
         Process.Start("explorer", $"\"{video.FullPath}\"").Dispose();
     }

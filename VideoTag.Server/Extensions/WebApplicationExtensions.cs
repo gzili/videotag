@@ -1,13 +1,13 @@
-using VideoTag.Server.OneTimeCommands;
+using VideoTag.Server.StartupCommands;
 
 namespace VideoTag.Server.Extensions;
 
 public static class WebApplicationExtensions
 {
-    public static void EnsureMigrationVersionUpdated(this WebApplication app)
+    public static void RunStartupCommand<T>(this WebApplication app) where T : IStartupCommand
     {
         using var scope = app.Services.CreateScope();
-        var command = scope.ServiceProvider.GetRequiredService<UpdateMigrationVersionCommand>();
-        command.Run();
+        var resolvedCommand = scope.ServiceProvider.GetRequiredService<T>();
+        resolvedCommand.Run();
     }
 }
