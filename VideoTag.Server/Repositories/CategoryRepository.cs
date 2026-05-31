@@ -74,7 +74,7 @@ public class CategoryRepository(DapperContext dapperContext) : ICategoryReposito
                              )
                              SELECT C.CategoryId, C.Label, T.TagId, T.Label, coalesce(TBV.VideoCount, 0) VideoCount
                              FROM Categories C
-                                 JOIN Tags T on T.CategoryId = C.CategoryId
+                                 LEFT JOIN Tags T on T.CategoryId = C.CategoryId
                                  LEFT JOIN TagsByVideo TBV on TBV.TagId = T.TagId
                              ORDER BY C.Label, T.Label
                              """;

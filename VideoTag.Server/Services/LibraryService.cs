@@ -48,7 +48,7 @@ public class LibraryService(IOptions<SyncOptions> syncOptions, IVideoRepository 
 
     private bool IsAllowedFileExtension(string path)
     {
-        var extension = Path.GetExtension(path)[1..];
+        var extension = Path.GetExtension(path)[1..].ToLowerInvariant();
         return _syncOptions.AllowedFileExtensions.Any(allowedExtension => extension == allowedExtension);
     }
 }
