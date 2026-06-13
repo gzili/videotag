@@ -1,8 +1,6 @@
-using System.Data.Common;
 using System.Globalization;
 using System.Text.Json.Serialization;
 using Dapper;
-using EvolveDb;
 using Microsoft.Extensions.Options;
 using VideoTag.Server.BackgroundServices;
 using VideoTag.Server.Configuration;
@@ -13,11 +11,15 @@ using VideoTag.Server.OneTimeCommands;
 using VideoTag.Server.Repositories;
 using VideoTag.Server.Services;
 using VideoTag.Server.SqlTypeHandlers;
+using VideoTag.Server.StartupCommands;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
+SqlMapper.RemoveTypeMap(typeof(DateTime));
+
 SqlMapper.AddTypeHandler(new GuidHandler());
+SqlMapper.AddTypeHandler(new DateTimeUtcHandler());
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +47,11 @@ builder.Services.AddSingleton<ITagRepository, TagRepository>();
 builder.Services.AddSingleton<ITagService, TagService>();
 builder.Services.AddSingleton<ILibraryService, LibraryService>();
 builder.Services.AddSingleton<ICustomThumbnailsRepository, CustomThumbnailsRepository>();
+builder.Services.AddSingleton<WatchLogRepository>();
+builder.Services.AddSingleton<WatchLogService>();
+builder.Services.AddScoped<DbMigrationStartupCommand>();
+builder.Services.AddScoped<VacuumStartupCommand>();
+builder.Services.AddScoped<DateNormalizationStartupCommand>();
 
 builder.Services.AddHostedService<RebuildJob>();
 builder.Services.AddHostedService<VideoLibrarySync>();
@@ -69,28 +76,9 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
-app.EnsureMigrationVersionUpdated();
-
-using (var scope = app.Services.CreateScope())
-{
-    var serviceProvider = scope.ServiceProvider;
-    var dapperContext = serviceProvider.GetRequiredService<DapperContext>();
-    var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-    using (var connection = dapperContext.CreateConnection())
-    {
-        var evolve = new Evolve(
-            (DbConnection)connection,
-            msg => logger.LogInformation("{Message}", msg)
-        )
-        {
-            Locations = ["Migrations"],
-            MetadataTableName = "Migrations",
-            IsEraseDisabled = true
-        };
-        
-        evolve.Migrate();
-    }
-}
+app.RunStartupCommand<DbMigrationStartupCommand>();
+app.RunStartupCommand<VacuumStartupCommand>();
+app.RunStartupCommand<DateNormalizationStartupCommand>();
 
 // Configure the HTTP request pipeline.
 

@@ -1,3 +1,4 @@
+using VideoTag.Server.Constants;
 using VideoTag.Server.Helpers;
 using VideoTag.Server.Repositories;
 using VideoTag.Server.Services;
@@ -16,7 +17,7 @@ public class RebuildJob(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var isRebuildNeeded = await metaRepository.IsRebuildNeeded();
+        var isRebuildNeeded = await metaRepository.IsFlagSet(MetaFlag.RebuildNeeded);
         if (isRebuildNeeded)
         {
             RunRebuild();
@@ -91,7 +92,7 @@ public class RebuildJob(
             await videoRepository.UpdateVideo(video);
         }
 
-        await metaRepository.ClearRebuildNeeded();
+        await metaRepository.ClearFlag(MetaFlag.RebuildNeeded);
         
         logger.LogInformation("Rebuild job completed.");
     }

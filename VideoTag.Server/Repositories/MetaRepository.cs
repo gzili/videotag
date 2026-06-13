@@ -1,41 +1,29 @@
 using Dapper;
+using VideoTag.Server.Constants;
 using VideoTag.Server.Contexts;
 
 namespace VideoTag.Server.Repositories;
 
 public interface IMetaRepository
 {
-    Task<bool> IsRebuildNeeded();
-    Task ClearRebuildNeeded();
+    Task<bool> IsFlagSet(MetaFlag flag);
+    Task ClearFlag(MetaFlag flag);
 }
 
 public class MetaRepository(DapperContext dapperContext) : IMetaRepository
 {
-    private const string RebuildNeeded = "RebuildNeeded";
-    
-    public async Task<bool> IsRebuildNeeded()
-    {
-        var value = await GetMetaValue(RebuildNeeded);
-        return value == "1";
-    }
-
-    public async Task ClearRebuildNeeded()
-    {
-        await UpdateMetaValue(RebuildNeeded, "0");
-    }
-
-    private async Task<string> GetMetaValue(string name)
+    public async Task<bool> IsFlagSet(MetaFlag flag)
     {
         const string sql = "SELECT Value FROM Meta WHERE Name = @name";
         using var connection = dapperContext.CreateConnection();
-        var value = await connection.QueryFirstAsync<string>(sql, new { name });
-        return value;
+        var value = await connection.QueryFirstOrDefaultAsync<string>(sql, new { name = flag.ToString() });
+        return value == "1";
     }
 
-    private async Task UpdateMetaValue(string name, string value)
+    public async Task ClearFlag(MetaFlag flag)
     {
-        const string sql = "Update Meta SET Value = @value WHERE Name = @name";
+        const string sql = "DELETE FROM Meta WHERE Name = @name";
         using var connection = dapperContext.CreateConnection();
-        await connection.ExecuteAsync(sql, new { name, value });
+        await connection.ExecuteAsync(sql, new { name = flag.ToString() });
     }
 }
