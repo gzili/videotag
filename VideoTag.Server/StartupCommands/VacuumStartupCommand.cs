@@ -1,4 +1,5 @@
 using Dapper;
+using VideoTag.Server.Constants;
 using VideoTag.Server.Contexts;
 using VideoTag.Server.Repositories;
 
@@ -16,12 +17,12 @@ public class VacuumStartupCommand(
 {
     public async Task Run()
     {
-        var isVacuumNeeded = await metaRepository.IsVacuumNeeded();
+        var isVacuumNeeded = await metaRepository.IsFlagSet(MetaFlag.VacuumNeeded);
         if (!isVacuumNeeded) return;
         logger.LogInformation("Optimizing the database...");
         using var connection = dapperContext.CreateConnection();
         await connection.ExecuteAsync("VACUUM;");
-        await metaRepository.ClearVacuumNeeded();
+        await metaRepository.ClearFlag(MetaFlag.VacuumNeeded);
         logger.LogInformation("Database optimized");
     }
 }

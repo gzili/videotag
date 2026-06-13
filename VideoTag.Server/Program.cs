@@ -51,6 +51,7 @@ builder.Services.AddSingleton<WatchLogRepository>();
 builder.Services.AddSingleton<WatchLogService>();
 builder.Services.AddScoped<DbMigrationStartupCommand>();
 builder.Services.AddScoped<VacuumStartupCommand>();
+builder.Services.AddScoped<DateNormalizationStartupCommand>();
 
 builder.Services.AddHostedService<RebuildJob>();
 builder.Services.AddHostedService<VideoLibrarySync>();
@@ -77,6 +78,7 @@ var app = builder.Build();
 
 app.RunStartupCommand<DbMigrationStartupCommand>();
 app.RunStartupCommand<VacuumStartupCommand>();
+app.RunStartupCommand<DateNormalizationStartupCommand>();
 
 // Configure the HTTP request pipeline.
 
